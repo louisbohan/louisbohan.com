@@ -1,0 +1,23 @@
+# Louis Bohan
+> ERP partnerships, full-stack applications, and AI tooling.
+
+Currently leading channel growth at Odoo. Scaled North American partner program 5x to 500+ accounts. Build full-stack apps with Next.js, TypeScript, and modern AI APIs.
+
+## Links
+- GitHub: https://github.com/louisbohan
+- LinkedIn: https://linkedin.com/in/louisbohan
+- Email: louis@louisbohan.com
+
+## Projects
+- **Brand Availability Agent** — Scans 50+ platforms for brand name availability. DNS verification, AI strategist analysis. https://github.com/louisbohan/brand-availability-agent
+- **Prompt Router** — Intent-aware LLM routing proxy. Auto-selects Claude, DeepSeek, or GPT per request. https://github.com/louisbohan/prompt-router
+- **Kitchen Remodel Estimator** — Interactive cost estimator for Bay Area contractors. https://github.com/louisbohan/kitchen-remodel-estimator
+
+## Roles
+- Channel & Partnership Lead at Odoo
+- Full-Stack Builder (Next.js, TypeScript, TailwindCSS)
+- AI Tooling & Automation (Claude, OpenAI, OpenClaw)
+- Revenue-driven development (products with MRR)
+
+## Bio
+I build software that sells. ERP partnerships, full-stack apps, and AI-powered tools — from concept to deployment to revenue. I sit at the intersection of enterprise software sales and rapid AI-driven development.
