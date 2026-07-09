@@ -13,6 +13,7 @@ import {
   Palette,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
+import AsciiParticleField from "@/components/ascii-particle-field";
 
 // ── Utility ──
 
@@ -91,7 +92,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="min-h-[85vh] flex items-center justify-center px-6 pt-14">
+    <section className="min-h-[85vh] relative flex items-center justify-center px-6 pt-14 overflow-hidden">
       <div className="max-w-3xl mx-auto text-center">
         <FadeInUp>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-medium mb-8">
@@ -404,6 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
+      <AsciiParticleField density="sparse" />
       <Nav />
       <Hero />
       <SummaryStrip />
