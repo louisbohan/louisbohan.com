@@ -6,13 +6,12 @@ interface Props {
   className?: string;
 }
 
-// ASCII chars ordered by visual weight (lightest → heaviest)
-const DENSITY_CHARS = [".", "·", ":", "-", "=", "+", "*", "#", "%", "@"];
+// ASCII chars ordered by visual weight (heaviest → lightest)
+const DENSITY_CHARS = ["@", "%", "#", "*", "+", "=", "-", "|", ":", "."];
 
 export default function CursorAsciiTrail({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -2000, y: -2000 });
-  const frameRef = useRef(0);
   const timeRef = useRef(0);
 
   useEffect(() => {
@@ -55,72 +54,67 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
 
     let animId: number;
 
+    const CELL_SIZE = 11;
+    const GRID_RADIUS = 16;
+
     const animate = (timestamp: number) => {
       timeRef.current = timestamp * 0.001;
       const rect = canvas!.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
 
-      // Fade trail — slow decay creates the "comet tail" effect
-      ctx!.fillStyle = "rgba(15, 25, 35, 0.15)";
-      ctx!.fillRect(0, 0, w, h);
+      // Clear fully — no trail
+      ctx!.clearRect(0, 0, w, h);
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
       const hasMouse = mx > -1500;
-
-      if (!hasMouse) {
-        frameRef.current = animId;
-        animId = requestAnimationFrame(animate);
-        return;
-      }
-
       const t = timeRef.current;
-      const chars = DENSITY_CHARS;
 
-      // Draw concentric rings of ASCII characters centered on cursor
-      // Each ring uses a different character weight based on distance
-      const ringRadii = [8, 22, 38, 56, 78, 105, 135, 170, 210, 260];
+      animId = requestAnimationFrame(animate);
+      if (!hasMouse) return;
 
-      for (let ringIdx = 0; ringIdx < ringRadii.length; ringIdx++) {
-        const radius = ringRadii[ringIdx];
-        const char = chars[chars.length - 1 - ringIdx];
-        // Number of chars per ring: more as radius grows, but sparse enough to look organic
-        const count = Math.max(3, Math.floor(radius * 0.22));
+      // Slow rotation
+      const angle = t * 0.15;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
 
-        // Pulsate: each ring breathes slightly out of phase
-        const ringPhase = ringIdx * 0.4;
-        const pulse = 1 + 0.1 * Math.sin(t * 1.2 + ringPhase);
+      const totalCells = GRID_RADIUS * 2 + 1;
 
-        // Dimness: farthest rings are much dimmer
-        const dimFactor = 1 - ringIdx / ringRadii.length;
-        const opacity = 0.01 + dimFactor * 0.08;
+      for (let row = 0; row < totalCells; row++) {
+        for (let col = 0; col < totalCells; col++) {
+          const lx = col - GRID_RADIUS;
+          const ly = row - GRID_RADIUS;
 
-        const r = radius * pulse;
+          // Skip center cell (cursor position)
+          if (lx === 0 && ly === 0) continue;
 
-        for (let i = 0; i < count; i++) {
-          const angle =
-            (i / count) * Math.PI * 2 + t * 0.02 * (ringIdx + 1);
-          const jitter = (Math.random() - 0.5) * 3;
-          const x = mx + Math.cos(angle) * r + jitter;
-          const y = my + Math.sin(angle) * r + jitter;
+          // Distance from center → determines char density & opacity
+          const dist = Math.sqrt(lx * lx + ly * ly);
+          const maxDist = Math.sqrt(2) * GRID_RADIUS;
+          const normDist = dist / maxDist;
 
-          // Skip if outside canvas
-          if (x < -5 || x > w + 5 || y < -5 || y > h + 5) continue;
+          const charIdx = Math.floor(normDist * DENSITY_CHARS.length);
+          const char = DENSITY_CHARS[Math.max(0, Math.min(charIdx, DENSITY_CHARS.length - 1))];
+          const opacity = 0.01 + (1 - normDist) * 0.08;
 
-          const fontSizes = [7, 8, 9];
-          const size = fontSizes[Math.floor(Math.random() * fontSizes.length)];
+          if (opacity < 0.01) continue;
 
-          ctx!.font = `${size}px "JetBrains Mono", monospace`;
+          // Rotate grid around cursor
+          const rx = lx * cosA - ly * sinA;
+          const ry = lx * sinA + ly * cosA;
+          const sx = mx + rx * CELL_SIZE;
+          const sy = my + ry * CELL_SIZE;
+
+          if (sx < -CELL_SIZE || sx > w + CELL_SIZE || sy < -CELL_SIZE || sy > h + CELL_SIZE) continue;
+
+          ctx!.font = `${CELL_SIZE - 1}px "JetBrains Mono", monospace`;
           ctx!.textAlign = "center";
           ctx!.textBaseline = "middle";
           ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
-          ctx!.fillText(char, x, y);
+          ctx!.fillText(char, sx, sy);
         }
       }
-
-      frameRef.current = animId;
-      animId = requestAnimationFrame(animate);
     };
 
     animId = requestAnimationFrame(animate);
