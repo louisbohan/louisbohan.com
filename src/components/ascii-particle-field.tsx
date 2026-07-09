@@ -25,8 +25,8 @@ const CHARS_DENSE = ["@", "#", "%", "&", "*", "+", "-", "·", ".", ":", "~"];
 const SOFT_WHITE = "rgba(240, 236, 228, VAR)";
 
 // Anthropic Constitution page hero SVG
-const CONSTITUTION_SVG =
-  "https://www-cdn.anthropic.com/images/4zrzovbb/website/a542a6657627a5e114365ca69168490c5e8b0443-1000x1000.svg";
+// Local constitution scroll+quill artwork (place in public/)
+const CONSTITUTION_IMAGE = "/constitution-art.png";
 
 export default function AsciiParticleField({
   density = "sparse",
@@ -48,7 +48,7 @@ export default function AsciiParticleField({
   useEffect(() => {
     if (!isDense) return;
 
-    const imgUrl = srcImage || CONSTITUTION_SVG;
+    const imgUrl = srcImage || CONSTITUTION_IMAGE;
 
     const img = new Image();
     img.crossOrigin = "anonymous";
