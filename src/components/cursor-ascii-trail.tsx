@@ -6,14 +6,12 @@ interface Props {
   className?: string;
 }
 
-// Grayscale pairs: each pair represents a density level
-// Characters pulse between their pair based on a slow wave
-//
-// Light (sparse) → . ↔ :
-// Mid-light       → - ↔ =
-// Mid             → + ↔ =
-// Mid-dark        → + ↔ #
-// Dark (dense)    → # ↔ @
+// Character pairs — each density level pulses between two chars:
+// Lightest → . and :
+//           → - and =
+//           → + and =
+//           → + and #
+// Darkest  → # and @
 const PAIRS: [string, string][] = [
   [".", ":"],
   ["-", "="],
@@ -24,7 +22,7 @@ const PAIRS: [string, string][] = [
 
 export default function CursorAsciiTrail({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -10000, y: -10000 });
+  const mouseRef = useRef({ x: -2000, y: -2000 });
   const timeRef = useRef(0);
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
       mouseRef.current = { x: cx, y: cy };
     };
     const onLeave = () => {
-      mouseRef.current = { x: -10000, y: -10000 };
+      mouseRef.current = { x: -2000, y: -2000 };
     };
 
     window.addEventListener("mousemove", onMouse);
@@ -67,22 +65,9 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
 
     let animId: number;
 
-    const CELL = 13;
-    const COLS = 80;
-    const ROWS = 50;
-    const RAY = 380;
-
-    // Pre-compute grid positions
-    const grid: { x: number; y: number; phase: number }[] = [];
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        grid.push({
-          x: c * CELL + CELL / 2,
-          y: r * CELL + CELL / 2,
-          phase: Math.random() * Math.PI * 2,
-        });
-      }
-    }
+    // Same concentric ring architecture — confirmed correct behavior
+    // Each ring uses the pair's two characters, pulsing between them
+    const ringRadii = [8, 22, 38, 56, 78, 105, 135, 170, 210, 260];
 
     const animate = (timestamp: number) => {
       timeRef.current = timestamp * 0.001;
@@ -90,58 +75,65 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
       const w = rect.width;
       const h = rect.height;
 
-      ctx!.clearRect(0, 0, w, h);
+      // Fade trail for comet tail effect
+      ctx!.fillStyle = "rgba(15, 25, 35, 0.15)";
+      ctx!.fillRect(0, 0, w, h);
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
-      const hasMouse = mx > -5000;
+      const hasMouse = mx > -1500;
+
+      if (!hasMouse) {
+        animId = requestAnimationFrame(animate);
+        return;
+      }
+
       const t = timeRef.current;
 
-      animId = requestAnimationFrame(animate);
-      if (!hasMouse) return;
+      // Each ring: map ring index to a pair and pulse
+      for (let ringIdx = 0; ringIdx < ringRadii.length; ringIdx++) {
+        const radius = ringRadii[ringIdx];
+        const count = Math.max(3, Math.floor(radius * 0.22));
 
-      for (let i = 0; i < grid.length; i++) {
-        const cell = grid[i];
-        if (cell.x < -CELL || cell.x > w + CELL) continue;
-        if (cell.y < -CELL || cell.y > h + CELL) continue;
-
-        // Distance from cursor
-        const dx = cell.x - mx;
-        const dy = cell.y - my;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Illumination: Gaussian falloff from cursor
-        let illumination = 0;
-        if (dist < RAY) {
-          const norm = dist / RAY;
-          illumination = Math.max(0, 1 - norm * norm);
-          illumination *= illumination;
-        }
-
-        if (illumination < 0.001) continue;
-
-        // Map illumination (0-1) to pair index (0-4)
-        // Dim areas → pair 0 (.:)
-        // Bright areas → pair 4 (#@)
+        // Map ring to pair (0-9 rings → 0-4 pairs, gently grading)
         const pairIdx = Math.min(
-          Math.floor(illumination * PAIRS.length),
+          Math.floor((ringIdx / ringRadii.length) * PAIRS.length),
           PAIRS.length - 1
         );
         const [charA, charB] = PAIRS[pairIdx];
 
-        // Pulse: each cell oscillates between its pair A ↔ B
-        // Phase creates a wave across the grid
-        const pulse = 0.5 + 0.5 * Math.sin(t * 0.7 + cell.phase);
-        const char = pulse < 0.5 ? charA : charB;
+        // Pulse: the characters oscillate between A and B
+        // Each ring has a different phase so nearby rings feel organic
+        const pulse = Math.sin(t * 0.9 + ringIdx * 0.6);
 
-        const opacity = 0.005 + illumination * 0.08;
+        // Dimness: outer rings are dimmer
+        const dimFactor = 1 - ringIdx / ringRadii.length;
+        const opacity = 0.01 + dimFactor * 0.08;
 
-        ctx!.font = `${CELL - 1}px "JetBrains Mono", monospace`;
-        ctx!.textAlign = "center";
-        ctx!.textBaseline = "middle";
-        ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
-        ctx!.fillText(char, cell.x, cell.y);
+        const r = radius;
+
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + t * 0.02 * (ringIdx + 1);
+          const jitter = (Math.random() - 0.5) * 3;
+          const x = mx + Math.cos(angle) * r + jitter;
+          const y = my + Math.sin(angle) * r + jitter;
+
+          if (x < -5 || x > w + 5 || y < -5 || y > h + 5) continue;
+
+          // Pick char A or B based on pulse value
+          const char = pulse < 0 ? charA : charB;
+
+          const size = 7 + Math.floor(Math.random() * 3);
+
+          ctx!.font = `${size}px "JetBrains Mono", monospace`;
+          ctx!.textAlign = "center";
+          ctx!.textBaseline = "middle";
+          ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
+          ctx!.fillText(char, x, y);
+        }
       }
+
+      animId = requestAnimationFrame(animate);
     };
 
     animId = requestAnimationFrame(animate);
