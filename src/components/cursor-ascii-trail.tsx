@@ -95,9 +95,10 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
         const radius = ringRadii[ringIdx];
         const count = Math.max(3, Math.floor(radius * 0.22));
 
-        // Map ring to pair (0-9 rings → 0-4 pairs, gently grading)
+        // Map ring to pair: inner rings → heavy chars (#@), outer rings → light chars (.:)
+        // Invert: ring 0 (inner) → pair 4 (#@), ring 9 (outer) → pair 0 (.:)
         const pairIdx = Math.min(
-          Math.floor((ringIdx / ringRadii.length) * PAIRS.length),
+          Math.floor(((ringRadii.length - 1 - ringIdx) / ringRadii.length) * PAIRS.length),
           PAIRS.length - 1
         );
         const [charA, charB] = PAIRS[pairIdx];
