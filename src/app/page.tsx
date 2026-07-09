@@ -263,21 +263,21 @@ const projects = [
     description:
       "Scans 50+ platforms to check brand name availability. DNS verification, AI strategist analysis, automated scoring.",
     tags: ["Next.js", "TypeScript", "Prisma", "Claude API", "TailwindCSS"],
-    link: "https://github.com/louisbohan/brand-availability-agent",
+    link: null, // private repo — ask Lou for a demo or build one
   },
   {
     title: "Prompt Router",
     description:
       "Intent-aware LLM routing proxy — auto-selects Claude, DeepSeek, or GPT per request. BYOK, AES-256, OpenAI-compatible.",
     tags: ["TypeScript", "LLM Routing", "AES-256", "MIT License"],
-    link: "https://github.com/louisbohan/prompt-router",
+    link: "https://prompt-router-demo.vercel.app",
   },
   {
     title: "Kitchen Remodel Estimator",
     description:
       "Interactive cost estimator for Bay Area contractors. Material selection, trade breakdowns, print-ready bid reports.",
     tags: ["Next.js", "TypeScript", "TailwindCSS", "Motion"],
-    link: "https://github.com/louisbohan/kitchen-remodel-estimator",
+    link: "https://kitchen-remodel-demo.vercel.app",
   },
   {
     title: "Odoo Partner Program Growth",
