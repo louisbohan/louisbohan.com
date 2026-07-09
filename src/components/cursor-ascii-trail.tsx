@@ -6,8 +6,8 @@ interface Props {
   className?: string;
 }
 
-// ASCII chars ordered by visual weight (heaviest → lightest)
-const DENSITY_CHARS = ["@", "%", "#", "*", "+", "=", "-", "|", ":", "."];
+// ASCII chars: heaviest (center) → lightest (edges)
+const DENSITY_CHARS = ["@", "%", "&", "#", "*", "+", "=", "-", "|", ":", "."];
 
 export default function CursorAsciiTrail({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,8 +54,24 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
 
     let animId: number;
 
-    const CELL_SIZE = 11;
-    const GRID_RADIUS = 16;
+    // Fixed grid: cells that cover the full viewport
+    const CELL_SIZE = 13;
+    const COLS = 100;
+    const ROWS = 60;
+
+    // Pre-compute grid cell positions (fixed in page space)
+    const grid: { x: number; y: number }[][] = [];
+
+    for (let row = 0; row < ROWS; row++) {
+      const rowCells: { x: number; y: number }[] = [];
+      for (let col = 0; col < COLS; col++) {
+        rowCells.push({
+          x: col * CELL_SIZE + CELL_SIZE / 2,
+          y: row * CELL_SIZE + CELL_SIZE / 2,
+        });
+      }
+      grid.push(rowCells);
+    }
 
     const animate = (timestamp: number) => {
       timeRef.current = timestamp * 0.001;
@@ -63,50 +79,49 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
       const w = rect.width;
       const h = rect.height;
 
-      // Clear fully — no trail
+      // Clear fully
       ctx!.clearRect(0, 0, w, h);
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
       const hasMouse = mx > -1500;
-      const t = timeRef.current;
 
       animId = requestAnimationFrame(animate);
       if (!hasMouse) return;
 
-      // Slow rotation
-      const angle = t * 0.15;
-      const cosA = Math.cos(angle);
-      const sinA = Math.sin(angle);
+      // Compute visible grid range (only render cells in viewport)
+      const startCol = Math.max(0, Math.floor(-CELL_SIZE / CELL_SIZE));
+      const endCol = Math.min(COLS, Math.ceil((w + CELL_SIZE) / CELL_SIZE));
+      const startRow = Math.max(0, Math.floor(-CELL_SIZE / CELL_SIZE));
+      const endRow = Math.min(ROWS, Math.ceil((h + CELL_SIZE) / CELL_SIZE));
 
-      const totalCells = GRID_RADIUS * 2 + 1;
+      const maxDist = Math.sqrt(2) * 16 * CELL_SIZE; // ~cells visible from cursor
 
-      for (let row = 0; row < totalCells; row++) {
-        for (let col = 0; col < totalCells; col++) {
-          const lx = col - GRID_RADIUS;
-          const ly = row - GRID_RADIUS;
+      for (let row = startRow; row < endRow; row++) {
+        for (let col = startCol; col < endCol; col++) {
+          const cell = grid[row][col];
+          const sx = cell.x;
+          const sy = cell.y;
 
-          // Skip center cell (cursor position)
-          if (lx === 0 && ly === 0) continue;
+          // Skip offscreen cells
+          if (sx < -CELL_SIZE || sx > w + CELL_SIZE) continue;
+          if (sy < -CELL_SIZE || sy > h + CELL_SIZE) continue;
 
-          // Distance from center → determines char density & opacity
-          const dist = Math.sqrt(lx * lx + ly * ly);
-          const maxDist = Math.sqrt(2) * GRID_RADIUS;
-          const normDist = dist / maxDist;
+          // Distance from cursor
+          const dx = sx - mx;
+          const dy = sy - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const normDist = Math.min(dist / maxDist, 1);
 
-          const charIdx = Math.floor(normDist * DENSITY_CHARS.length);
-          const char = DENSITY_CHARS[Math.max(0, Math.min(charIdx, DENSITY_CHARS.length - 1))];
+          // Character: heavy at center, light at edges
+          const charIdx = Math.min(
+            Math.floor(normDist * DENSITY_CHARS.length),
+            DENSITY_CHARS.length - 1
+          );
+          const char = DENSITY_CHARS[charIdx];
+
+          // Opacity: bright center, dim edges
           const opacity = 0.01 + (1 - normDist) * 0.08;
-
-          if (opacity < 0.01) continue;
-
-          // Rotate grid around cursor
-          const rx = lx * cosA - ly * sinA;
-          const ry = lx * sinA + ly * cosA;
-          const sx = mx + rx * CELL_SIZE;
-          const sy = my + ry * CELL_SIZE;
-
-          if (sx < -CELL_SIZE || sx > w + CELL_SIZE || sy < -CELL_SIZE || sy > h + CELL_SIZE) continue;
 
           ctx!.font = `${CELL_SIZE - 1}px "JetBrains Mono", monospace`;
           ctx!.textAlign = "center";
