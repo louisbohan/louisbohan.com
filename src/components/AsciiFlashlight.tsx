@@ -32,9 +32,10 @@ const CONFIG = {
   fontSize: 12,
   fontFamily: `"SF Mono", "Menlo", "Consolas", monospace`,
 
-  // Beam cone geometry — half-angle spread of the cone
-  beamAngleSpread: 0.5,       // radians (~28.6°) — cone half-angle from centerline
-  beamLength: 500,             // max reach from origin (px)
+  // Beam cone geometry — very narrow, ~20-25 chars max spread at full page height.
+  // At 7px/char, 25 chars wide over ~1000px reach => half-angle ~0.087 rad (5°)
+  beamAngleSpread: 0.09,      // radians (~5.2°) — narrow, like a tight flashlight
+  beamLength: 0,               // 0 = unlimited, shoots full page bottom to top
   plateau: 0.72,              // fraction from origin where brightness is full before falloff
 
   // Breathing — this IS the pulsation, 5s period, ±10%
@@ -177,7 +178,9 @@ export default function AsciiFlashlight({ originSelector, config, style, classNa
         ? 1
         : 1 + cfg.breathAmp * Math.sin((now / 1000) * ((Math.PI * 2) / cfg.breathPeriod));
 
-      const beamLength = cfg.beamLength * breath;
+      // Unlimited beam — reaches from origin to opposite edge of viewport
+      const viewDiag = Math.hypot(cssW, cssH);
+      const beamLength = viewDiag * 1.5;
       const cosThresh = Math.cos(cfg.beamAngleSpread);
 
       // Full clear — page bg
@@ -191,24 +194,13 @@ export default function AsciiFlashlight({ originSelector, config, style, classNa
       const halfW = cfg.cellW / 2;
       const halfH = cfg.cellH / 2;
 
-      // Bounding box around the beam cone for iteration
-      // Cone: from origin, direction dirX/Y, spread angle, max length
-      // Compute rough bounds to avoid scanning entire grid
+      // Bounding box: narrow cone, just iterate the full viewport.
+      // Dot product + perpNorm will reject outside-cone cells fast.
       const spreadDeg = cfg.beamAngleSpread;
-      // Approximate cone bounding box
-      const absDirX = Math.abs(dirX);
-      const absDirY = Math.abs(dirY);
-      const edgeFactor = Math.tan(spreadDeg);
-      let coneLeft = origin.x + (dx < 0 ? Math.min(0, dx) : 0);
-      let coneRight = origin.x + (dx > 0 ? Math.max(0, dx) : 0);
-      let coneTop = origin.y + (dy < 0 ? Math.min(0, dy) : 0);
-      let coneBottom = origin.y + (dy > 0 ? Math.max(0, dy) : 0);
-      // Add spread margin
-      const margin = beamLength * edgeFactor + cfg.cellW;
-      coneLeft -= margin;
-      coneRight += margin;
-      coneTop -= margin;
-      coneBottom += margin;
+      let coneLeft = 0;
+      let coneRight = cssW;
+      let coneTop = 0;
+      let coneBottom = cssH;
 
       const x0 = Math.max(0, Math.floor((coneLeft) / cfg.cellW));
       const x1 = Math.min(cols - 1, Math.ceil(coneRight / cfg.cellW));
@@ -228,15 +220,19 @@ export default function AsciiFlashlight({ originSelector, config, style, classNa
           const cdy = cy - origin.y;
           const la = Math.hypot(cdx, cdy);
 
-          // Inside beam length?
+          // Beyond beam max length?
           if (la > beamLength) continue;
 
           // Angle from centerline — dot product with dir
           let dot = 0;
           if (la > 0) {
             dot = (cdx * dirX + cdy * dirY) / la;
-            if (dot < cosThresh) continue; // outside cone angle
+            // Behind the flashlight (opposite direction from cursor)?
+            if (dot < cosThresh) continue; // outside cone angle (or behind)
           }
+
+          // Since dot < cosThresh catches the behind case (cosThresh > 0 for narrow cones),
+          // anything reaching here is in the same hemisphere as cursor direction.
 
           // Distance along the beam (0 = origin, 1 = full length)
           const t = Math.min(la / beamLength, 1);
