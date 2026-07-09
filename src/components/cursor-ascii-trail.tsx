@@ -6,51 +6,26 @@ interface Props {
   className?: string;
 }
 
-// Grayscale ramp: lightest → darkest
-// .  :  -  =  +  #  @
-// Bright areas → "."  (sparse)
-// Dark areas → "@"  (dense)
-const GRAYSCALE = [".", ":", "-", "=", "+", "#", "@"];
+// Grayscale pairs: each pair represents a density level
+// Characters pulse between their pair based on a slow wave
+//
+// Light (sparse) → . ↔ :
+// Mid-light       → - ↔ =
+// Mid             → + ↔ =
+// Mid-dark        → + ↔ #
+// Dark (dense)    → # ↔ @
+const PAIRS: [string, string][] = [
+  [".", ":"],
+  ["-", "="],
+  ["+", "="],
+  ["+", "#"],
+  ["#", "@"],
+];
 
 export default function CursorAsciiTrail({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -10000, y: -10000 });
   const timeRef = useRef(0);
-  const imageDataRef = useRef<ImageData | null>(null);
-
-  // Load the scroll+quill image and pre-compute grayscale values
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth || img.width;
-      c.height = img.naturalHeight || img.height;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const data = ctx.getImageData(0, 0, c.width, c.height);
-
-      // Convert to single-channel grayscale values (0-1, 0=black, 1=white)
-      const gray = new Float32Array(data.width * data.height);
-      for (let i = 0; i < gray.length; i++) {
-        const idx = i * 4;
-        // Luminosity-weighted grayscale
-        gray[i] =
-          (data.data[idx] * 0.299 +
-            data.data[idx + 1] * 0.587 +
-            data.data[idx + 2] * 0.114) /
-          255;
-      }
-
-      imageDataRef.current = {
-        data: gray,
-        width: data.width,
-        height: data.height,
-      } as unknown as ImageData;
-    };
-    img.src = "/constitution-art.png";
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,11 +70,17 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
     const CELL = 13;
     const COLS = 80;
     const ROWS = 50;
+    const RAY = 380;
 
-    const grid: { x: number; y: number }[] = [];
+    // Pre-compute grid positions
+    const grid: { x: number; y: number; phase: number }[] = [];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        grid.push({ x: c * CELL + CELL / 2, y: r * CELL + CELL / 2 });
+        grid.push({
+          x: c * CELL + CELL / 2,
+          y: r * CELL + CELL / 2,
+          phase: Math.random() * Math.PI * 2,
+        });
       }
     }
 
@@ -119,63 +100,40 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
       animId = requestAnimationFrame(animate);
       if (!hasMouse) return;
 
-      const rayRadius = 400;
-      const pulseRadius = rayRadius * (0.75 + 0.25 * Math.sin(t * 0.5));
-      const imgData = imageDataRef.current;
-
       for (let i = 0; i < grid.length; i++) {
         const cell = grid[i];
         if (cell.x < -CELL || cell.x > w + CELL) continue;
         if (cell.y < -CELL || cell.y > h + CELL) continue;
 
+        // Distance from cursor
         const dx = cell.x - mx;
         const dy = cell.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
+        // Illumination: Gaussian falloff from cursor
         let illumination = 0;
-        if (dist < pulseRadius) {
-          const norm = dist / pulseRadius;
+        if (dist < RAY) {
+          const norm = dist / RAY;
           illumination = Math.max(0, 1 - norm * norm);
-          illumination = illumination * illumination;
+          illumination *= illumination;
         }
 
         if (illumination < 0.001) continue;
 
-        // Sample the underlying image at this cell position
-        let grayVal = 0.5; // default mid-gray
-
-        if (imgData) {
-          // Map canvas position to image coordinates
-          const imgX = (cell.x / w) * imgData.width;
-          const imgY = (cell.y / h) * imgData.height;
-          const px = Math.floor(Math.min(imgX, imgData.width - 1));
-          const py = Math.floor(Math.min(imgY, imgData.height - 1));
-          const idx = py * imgData.width + px;
-
-          // Invert: dark image lines → dark gray → "@"
-          // Light image background → light gray → "."
-          // The scroll image has dark lines on lighter bg
-          // So we use the grayscale directly: dark pixels = high char index
-          grayVal = 1 - imgData.data[idx]; // invert so dark=1, light=0
-        } else {
-          // Fallback: soft gradient while image loads
-          const cx = cell.x / w;
-          const cy = cell.y / h;
-          grayVal =
-            0.1 + 0.6 * Math.sin(cx * 2.3 + cy * 1.7) * Math.cos(cx * 1.1 - cy * 0.8);
-        }
-
-        // Combine image gray with illumination
-        // Illuminated areas show the image, dark areas are invisible
-        const revealed = grayVal * illumination;
-
-        const charIdx = Math.min(
-          Math.floor(revealed * GRAYSCALE.length),
-          GRAYSCALE.length - 1
+        // Map illumination (0-1) to pair index (0-4)
+        // Dim areas → pair 0 (.:)
+        // Bright areas → pair 4 (#@)
+        const pairIdx = Math.min(
+          Math.floor(illumination * PAIRS.length),
+          PAIRS.length - 1
         );
-        const char = GRAYSCALE[Math.max(0, charIdx)];
+        const [charA, charB] = PAIRS[pairIdx];
 
-        // Brighter illumination → higher opacity but still dim
+        // Pulse: each cell oscillates between its pair A ↔ B
+        // Phase creates a wave across the grid
+        const pulse = 0.5 + 0.5 * Math.sin(t * 0.7 + cell.phase);
+        const char = pulse < 0.5 ? charA : charB;
+
         const opacity = 0.005 + illumination * 0.08;
 
         ctx!.font = `${CELL - 1}px "JetBrains Mono", monospace`;
