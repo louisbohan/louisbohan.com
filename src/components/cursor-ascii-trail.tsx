@@ -6,7 +6,7 @@ interface Props {
   className?: string;
 }
 
-// Character pairs — each density level pulses between two chars:
+// Grayscale pairs — each pair pulses between its two characters
 // Lightest → . and :
 //           → - and =
 //           → + and =
@@ -20,9 +20,8 @@ const PAIRS: [string, string][] = [
   ["#", "@"],
 ];
 
-export default function CursorAsciiTrail({ className = "" }: Props) {
+export default function BackgroundAsciiMist({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -2000, y: -2000 });
   const timeRef = useRef(0);
 
   useEffect(() => {
@@ -41,33 +40,36 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
     resize();
     window.addEventListener("resize", resize);
 
-    const onMouse = (e: MouseEvent | TouchEvent) => {
-      let cx: number, cy: number;
-      if ("touches" in e && e.touches.length > 0) {
-        const rect = canvas!.getBoundingClientRect();
-        cx = e.touches[0].clientX - rect.left;
-        cy = e.touches[0].clientY - rect.top;
-      } else {
-        const me = e as MouseEvent;
-        const rect = canvas!.getBoundingClientRect();
-        cx = me.clientX - rect.left;
-        cy = me.clientY - rect.top;
-      }
-      mouseRef.current = { x: cx, y: cy };
-    };
-    const onLeave = () => {
-      mouseRef.current = { x: -2000, y: -2000 };
-    };
-
-    window.addEventListener("mousemove", onMouse);
-    window.addEventListener("touchmove", onMouse);
-    window.addEventListener("mouseleave", onLeave);
-
     let animId: number;
 
-    // Same concentric ring architecture — confirmed correct behavior
-    // Each ring uses the pair's two characters, pulsing between them
-    const ringRadii = [8, 22, 38, 56, 78, 105, 135, 170, 210, 260];
+    const CELL = 14;
+    const COLS = 64;
+    const ROWS = 40;
+
+    // Pre-compute grid with random phases
+    const grid: { x: number; y: number; phase: number; pairIdx: number }[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        // Normalized position in viewport
+        const nx = c / COLS;
+        const ny = r / ROWS;
+
+        // Determine pair index from position — creates a soft gradient
+        // across the page so different areas have different character densities
+        const gradient = 0.2 + 0.6 * (0.5 * Math.sin(nx * 3.1 + ny * 2.7) + 0.5);
+        const pairIdx = Math.min(
+          Math.floor(gradient * PAIRS.length),
+          PAIRS.length - 1
+        );
+
+        grid.push({
+          x: c * CELL + CELL / 2,
+          y: r * CELL + CELL / 2,
+          phase: Math.random() * Math.PI * 2,
+          pairIdx,
+        });
+      }
+    }
 
     const animate = (timestamp: number) => {
       timeRef.current = timestamp * 0.001;
@@ -75,63 +77,31 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
       const w = rect.width;
       const h = rect.height;
 
-      // Fade trail for comet tail effect
-      ctx!.fillStyle = "rgba(15, 25, 35, 0.15)";
+      // Fade trail — slow decay so characters leave a faint ghost
+      ctx!.fillStyle = "rgba(15, 25, 35, 0.3)";
       ctx!.fillRect(0, 0, w, h);
-
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      const hasMouse = mx > -1500;
-
-      if (!hasMouse) {
-        animId = requestAnimationFrame(animate);
-        return;
-      }
 
       const t = timeRef.current;
 
-      // Each ring: map ring index to a pair and pulse
-      for (let ringIdx = 0; ringIdx < ringRadii.length; ringIdx++) {
-        const radius = ringRadii[ringIdx];
-        const count = Math.max(3, Math.floor(radius * 0.22));
+      for (let i = 0; i < grid.length; i++) {
+        const cell = grid[i];
+        if (cell.x < -CELL || cell.x > w + CELL) continue;
+        if (cell.y < -CELL || cell.y > h + CELL) continue;
 
-        // Map ring to pair: inner rings → heavy chars (#@), outer rings → light chars (.:)
-        // Invert: ring 0 (inner) → pair 4 (#@), ring 9 (outer) → pair 0 (.:)
-        const pairIdx = Math.min(
-          Math.floor(((ringRadii.length - 1 - ringIdx) / ringRadii.length) * PAIRS.length),
-          PAIRS.length - 1
-        );
-        const [charA, charB] = PAIRS[pairIdx];
+        const [charA, charB] = PAIRS[cell.pairIdx];
 
-        // Pulse: the characters oscillate between A and B
-        // Each ring has a different phase so nearby rings feel organic
-        const pulse = Math.sin(t * 0.9 + ringIdx * 0.6);
+        // Pulse between A and B — slow wave, each cell has its own phase
+        const pulse = Math.sin(t * 0.5 + cell.phase);
+        const char = pulse < 0 ? charA : charB;
 
-        // Dimness: outer rings are dimmer
-        const dimFactor = 1 - ringIdx / ringRadii.length;
-        const opacity = 0.01 + dimFactor * 0.08;
+        // Very dim — barely visible, just enough to feel the texture
+        const opacity = 0.02 + (1 - cell.pairIdx / PAIRS.length) * 0.04;
 
-        const r = radius;
-
-        for (let i = 0; i < count; i++) {
-          const angle = (i / count) * Math.PI * 2 + t * 0.02 * (ringIdx + 1);
-          const jitter = (Math.random() - 0.5) * 3;
-          const x = mx + Math.cos(angle) * r + jitter;
-          const y = my + Math.sin(angle) * r + jitter;
-
-          if (x < -5 || x > w + 5 || y < -5 || y > h + 5) continue;
-
-          // Pick char A or B based on pulse value
-          const char = pulse < 0 ? charA : charB;
-
-          const size = 7 + Math.floor(Math.random() * 3);
-
-          ctx!.font = `${size}px "JetBrains Mono", monospace`;
-          ctx!.textAlign = "center";
-          ctx!.textBaseline = "middle";
-          ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
-          ctx!.fillText(char, x, y);
-        }
+        ctx!.font = `${CELL}px "JetBrains Mono", monospace`;
+        ctx!.textAlign = "center";
+        ctx!.textBaseline = "middle";
+        ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
+        ctx!.fillText(char, cell.x, cell.y);
       }
 
       animId = requestAnimationFrame(animate);
@@ -142,9 +112,6 @@ export default function CursorAsciiTrail({ className = "" }: Props) {
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMouse);
-      window.removeEventListener("touchmove", onMouse);
-      window.removeEventListener("mouseleave", onLeave);
     };
   }, []);
 
