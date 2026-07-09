@@ -405,7 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <AsciiParticleField density="sparse" />
+      <AsciiParticleField density="dense" />
       <Nav />
       <Hero />
       <SummaryStrip />
