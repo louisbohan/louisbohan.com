@@ -125,7 +125,7 @@ function Hero() {
               <GitHubIcon />
             </a>
             <a
-              href="https://linkedin.com/in/louisbohan"
+              href="https://www.linkedin.com/in/louis-bohan-9b31746"
               target="_blank"
               className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
             >
@@ -368,13 +368,13 @@ function ContactSection() {
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </a>
               <a
-                href="https://linkedin.com/in/louisbohan"
+                href="https://www.linkedin.com/in/louis-bohan-9b31746"
                 target="_blank"
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 transition-colors group"
               >
                 <span className="flex items-center gap-3 text-sm">
                   <LinkedInIcon className="w-4 h-4 text-amber-500" />
-                  <span>linkedin.com/in/louisbohan</span>
+                  <span>linkedin.com/in/louis-bohan-9b31746</span>
                 </span>
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </a>
