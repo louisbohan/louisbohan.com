@@ -132,7 +132,7 @@ function Hero() {
               <LinkedInIcon />
             </a>
             <a
-              href="mailto:louis@louisbohan.com"
+              href="mailto:lou@louisbohan.com"
               className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
             >
               <Mail className="w-4 h-4" />
@@ -347,12 +347,12 @@ function ContactSection() {
           <div className="mt-10 card-base p-8">
             <div className="space-y-4">
               <a
-                href="mailto:louis@louisbohan.com"
+                href="mailto:lou@louisbohan.com"
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 transition-colors group"
               >
                 <span className="flex items-center gap-3 text-sm">
                   <Mail className="w-4 h-4 text-amber-500" />
-                  <span>louis@louisbohan.com</span>
+                  <span>lou@louisbohan.com</span>
                 </span>
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </a>
