@@ -7,11 +7,11 @@ interface Props {
 }
 
 // Grayscale pairs — each pair pulses between its two characters
-// Lightest → . and :   (bright pixels)
+// Lightest → . and :   (sparse)
 //           → - and =   (mid-light)
 //           → + and =   (mid)
 //           → + and #   (mid-dark)
-// Darkest  → # and @   (dark pixels)
+// Darkest  → # and @   (dense)
 const PAIRS: [string, string][] = [
   [".", ":"],
   ["-", "="],
@@ -23,39 +23,6 @@ const PAIRS: [string, string][] = [
 export default function BackgroundAsciiMist({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timeRef = useRef(0);
-  const imageDataRef = useRef<Float32Array | null>(null);
-  const imgWidthRef = useRef(1);
-  const imgHeightRef = useRef(1);
-
-  // Load the scroll+quill image and convert to grayscale
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth || img.width;
-      c.height = img.naturalHeight || img.height;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const data = ctx.getImageData(0, 0, c.width, c.height);
-      imgWidthRef.current = c.width;
-      imgHeightRef.current = c.height;
-
-      // Convert to single-channel grayscale (0=black, 1=white)
-      const gray = new Float32Array(c.width * c.height);
-      for (let i = 0; i < gray.length; i++) {
-        const idx = i * 4;
-        gray[i] =
-          (data.data[idx] * 0.299 +
-            data.data[idx + 1] * 0.587 +
-            data.data[idx + 2] * 0.114) /
-          255;
-      }
-      imageDataRef.current = gray;
-    };
-    img.src = "/constitution-art.png";
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -79,16 +46,24 @@ export default function BackgroundAsciiMist({ className = "" }: Props) {
     const COLS = 64;
     const ROWS = 40;
 
-    // Pre-compute grid
+    // Pre-compute grid cells with random phases
     const grid: { x: number; y: number; phase: number; pairIdx: number }[] = [];
-
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
+        // Use cell position to create a soft gradient across the page
+        const nx = c / COLS;
+        const ny = r / ROWS;
+        const gradient = 0.1 + 0.8 * (0.5 * Math.sin(nx * 3.7 + ny * 2.3) + 0.5);
+        const pairIdx = Math.min(
+          Math.floor(gradient * PAIRS.length),
+          PAIRS.length - 1
+        );
+
         grid.push({
           x: c * CELL + CELL / 2,
           y: r * CELL + CELL / 2,
           phase: Math.random() * Math.PI * 2,
-          pairIdx: 0, // will be updated each frame
+          pairIdx,
         });
       }
     }
@@ -99,48 +74,25 @@ export default function BackgroundAsciiMist({ className = "" }: Props) {
       const w = rect.width;
       const h = rect.height;
 
-      // Fade trail — slow decay
+      // Fade trail for organic feel
       ctx!.fillStyle = "rgba(15, 25, 35, 0.25)";
       ctx!.fillRect(0, 0, w, h);
 
       const t = timeRef.current;
-      const grayData = imageDataRef.current;
 
       for (let i = 0; i < grid.length; i++) {
         const cell = grid[i];
         if (cell.x < -CELL || cell.x > w + CELL) continue;
         if (cell.y < -CELL || cell.y > h + CELL) continue;
 
-        // Sample the image at this cell position
-        let grayVal = 0.5; // default mid gray while image loads
-
-        if (grayData) {
-          const imgW = imgWidthRef.current;
-          const imgH = imgHeightRef.current;
-          const srcX = Math.floor((cell.x / w) * imgW);
-          const srcY = Math.floor((cell.y / h) * imgH);
-          const px = Math.max(0, Math.min(srcX, imgW - 1));
-          const py = Math.max(0, Math.min(srcY, imgH - 1));
-          const idx = py * imgW + px;
-          // Invert: dark drawing lines → low grayVal → high pair index (dark char)
-          grayVal = grayData[idx];
-        }
-
-        // Map grayscale to pair index (0=black → 4, 1=white → 0)
-        const pairIdx = Math.min(
-          Math.floor((1 - grayVal) * PAIRS.length),
-          PAIRS.length - 1
-        );
-        cell.pairIdx = pairIdx;
-
-        const [charA, charB] = PAIRS[pairIdx];
+        const [charA, charB] = PAIRS[cell.pairIdx];
 
         // Pulse between A and B
         const pulse = Math.sin(t * 0.5 + cell.phase);
         const char = pulse < 0 ? charA : charB;
 
-        // Opacity: very dim
-        const opacity = 0.02 + (1 - pairIdx / PAIRS.length) * 0.03;
+        // Very dim
+        const opacity = 0.02 + (1 - cell.pairIdx / PAIRS.length) * 0.03;
 
         ctx!.font = `${CELL}px "JetBrains Mono", monospace`;
         ctx!.textAlign = "center";
