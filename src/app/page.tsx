@@ -13,7 +13,7 @@ import {
   Palette,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
-import CursorAsciiTrail from "@/components/cursor-ascii-trail";
+import BackgroundAsciiMist from "@/components/background-ascii-mist";
 
 // ── Utility ──
 
@@ -405,7 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <CursorAsciiTrail />
+      <BackgroundAsciiMist />
       <Nav />
       <Hero />
       <SummaryStrip />
