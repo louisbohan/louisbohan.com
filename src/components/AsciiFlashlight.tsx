@@ -1,236 +1,142 @@
 /**
  * AsciiFlashlight.tsx
  * ---------------------------------------------------------------------------
- * Faithful recreation of the "hidden ASCII artwork revealed by a cursor
- * flashlight" effect, reverse-engineered from frame-level analysis of the
- * reference recordings.
+ * Pure ASCII background with flashlight beam from a fixed origin pointing
+ * toward cursor. No source image — just a density field that's revealed
+ * by the beam. Beam pulses = characters alternate between density levels.
  *
- * WHAT THE EFFECT ACTUALLY IS (verified by pixel diffs, not vibes):
+ * Spec:
+ *  - Full page ASCII grid, static glyph assignment per cell
+ *  - No image — cells get density glyphs based on page position (gradient field)
+ *  - Beam is a CONE from origin point toward cursor
+ *  - Beam enters/exits pulse = characters alternate density (the "breathing")
+ *  - Outside beam: full dark (matches page bg)
+ *  - Beam falloff: plateau ~72% then smoothstep shell
+ *  - Breathing period ~5s, amplitude ±10%
+ *  - Cursor lerp follow at 0.14
  *
- *  1. A source image is pre-converted to an ASCII grid ONCE:
- *       - luminance -> glyph from a ~16-step density ramp
- *       - Sobel edge detection -> strong edges override the ramp glyph with
- *         an orientation stroke ( | / - \ ), which is what produces the
- *         diagonal "hair strand" runs and vertical `1{`-style strokes
- *         visible in the recording.
- *     The glyphs are STATIC. Frame diffs 1s apart show <2% pixel change
- *     (anti-aliasing only). There is NO per-cell character swapping.
- *
- *  2. The only temporal animation is the beam itself:
- *       - an oval ~300x210 CSS px that smoothly follows the cursor (lerp)
- *       - "breathing": radius oscillates ~±10% on a ~5s sine period
- *         (measured: lit-pixel count 10.4k -> 13.5k over ~2.5s half-cycle)
- *
- *  3. Falloff is a PLATEAU + SHELL, not a linear gradient:
- *       - full brightness out to ~72% of the beam radius
- *       - smoothstep to zero over the remaining ~28%
- *     Alpha is applied PER CELL (each glyph has one uniform alpha), which
- *     matches the recording — edge glyphs are dim but internally uniform.
- *
- *  4. Everything outside the beam is pure #000. Ink is neutral grey
- *     (~#ececec at peak, R=G=B confirmed).
- *
- * Stack: TypeScript + React + raw Canvas 2D. No deps.
+ * Stack: TypeScript + React + raw Canvas 2D.
  *
  * Usage:
- *   <AsciiFlashlight src="/art/portrait.jpg" />
- *
- * If `src` is omitted, a procedural fBm field is generated so the component
- * still demos — but the hidden artwork is the soul of the effect; feed it a
- * high-contrast portrait or illustration on black for the real thing.
+ *   <AsciiFlashlight originSelector="#github-icon" />
  * ---------------------------------------------------------------------------
  */
 
 import React, { useEffect, useRef } from "react";
 
-// ─── Tunables (all values in CSS px / seconds) ──────────────────────────────
+// ─── Tunables ───────────────────────────────────────────────────────────────
 
 const CONFIG = {
-  // Grid — measured column pitch ≈ 7 CSS px in the reference capture.
   cellW: 7,
   cellH: 9,
-  fontSize: 12,               // small mono; glyph box overflows the cell slightly, as in the ref
+  fontSize: 12,
   fontFamily: `"SF Mono", "Menlo", "Consolas", monospace`,
 
-  // Beam geometry — measured ≈ 280–300 wide, oval, wider than tall.
-  beamRx: 150,                // half-width  -> ~300px wide
-  beamRy: 105,                // half-height -> ~210px tall
-  plateau: 0.72,              // fraction of radius at FULL brightness before falloff begins
-  // (a plain radial gradient from the center is WRONG — the ref has a wide flat core)
+  // Beam cone geometry — half-angle spread of the cone
+  beamAngleSpread: 0.5,       // radians (~28.6°) — cone half-angle from centerline
+  beamLength: 500,             // max reach from origin (px)
+  plateau: 0.72,              // fraction from origin where brightness is full before falloff
 
-  // Breathing — the real "pulsation". ~5s period, ~±10% radius.
-  breathPeriod: 5.0,          // seconds
-  breathAmp: 0.10,            // ±10% radius scale
+  // Breathing — this IS the pulsation, 5s period, ±10%
+  breathPeriod: 5.0,
+  breathAmp: 0.10,
 
-  // Cursor follow — smooth lag.
-  followLerp: 0.14,           // per-frame at 60fps (dt-corrected below)
+  // Cursor follow
+  followLerp: 0.14,
 
   // Ink
-  inkColor: "#ececec",        // peak glyph brightness measured ~235/255, not pure white
-  bgColor: "#000000",
+  inkColor: "#ececec",
+  bgColor: "#0f1923",         // matches page charcoals ${overscroll-behavior: none}
 
-  // ASCII conversion
-  // 16-step density ramp, dark -> bright. Matches glyph population seen in
-  // the capture ( . , : ; i 1 t u c s x % d w m M ).
+  // Character ramp — 16 density levels from empty to dense
   ramp: " .,:;i1tucsx%dwmM@",
-  edgeThreshold: 0.28,        // Sobel magnitude (0..1) above which a cell becomes a stroke glyph
-  edgeGlyphs: ["-", "\\", "|", "/"] as const, // indexed by quantized gradient angle
-  minLuminance: 0.06,         // cells darker than this render as empty space (true black bg)
-  gamma: 0.85,                // mild lift so midtones populate the ramp nicely
 };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Cell {
-  ch: string;   // precomputed glyph ("" = never drawn)
-  lum: number;  // 0..1, modulates per-cell alpha slightly (denser art reads brighter)
-}
-
 interface Props {
-  src?: string;                       // source image for the hidden artwork
-  config?: Partial<typeof CONFIG>;    // override any tunable
+  /** CSS selector for the flashlight origin element (e.g. "#github-icon") */
+  originSelector: string;
+  config?: Partial<typeof CONFIG>;
   className?: string;
   style?: React.CSSProperties;
 }
 
+interface Cell {
+  ch: string;  // "" means unlit / empty
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function AsciiFlashlight({ src, config, style, className }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export default function AsciiFlashlight({ originSelector, config, style, className }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx2d = canvas.getContext("2d");
     if (!ctx2d) return;
-    const cv: HTMLCanvasElement = canvas;
-    const ctx: CanvasRenderingContext2D = ctx2d;
+    const cv = canvas;
+    const ctx = ctx2d;
 
     const cfg = { ...CONFIG, ...config };
-    const reducedMotion =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     // ── State ────────────────────────────────────────────────────────────
     let raf = 0;
     let cols = 0, rows = 0;
     let grid: Cell[] = [];
     let cssW = 0, cssH = 0, dpr = 1;
-    let imgEl: HTMLImageElement | null = null;
     let disposed = false;
-
-    // Beam position: target = raw pointer, pos = smoothed.
-    const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    const pos = { x: target.x, y: target.y };
     let lastT = performance.now();
 
-    // ── Grid precompute ──────────────────────────────────────────────────
-    // Runs once per image-load / resize. Renders the source image at grid
-    // resolution, extracts luminance, runs Sobel, bakes one glyph per cell.
+    // Origin position — derived from the DOM element
+    const origin = { x: 0, y: 0 };
+
+    // Cursor target / smoothed position
+    const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const pos = { x: target.x, y: target.y };
+
+    const rampMax = cfg.ramp.length - 1;
+
+    // ── Build grid — no image, just density based on cell position ──────
+    // Creates a soft organic gradient across the page so different areas
+    // have different base densities.
     function buildGrid() {
       cols = Math.ceil(cssW / cfg.cellW);
       rows = Math.ceil(cssH / cfg.cellH);
-
-      const off = document.createElement("canvas");
-      off.width = cols;
-      off.height = rows;
-      const octx = off.getContext("2d", { willReadFrequently: true })!;
-      octx.fillStyle = "#000";
-      octx.fillRect(0, 0, cols, rows);
-
-      if (imgEl) {
-        // cover-fit the artwork
-        const s = Math.max(cols / imgEl.width, rows / imgEl.height);
-        const dw = imgEl.width * s, dh = imgEl.height * s;
-        octx.drawImage(imgEl, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
-      } else {
-        drawProceduralField(octx, cols, rows); // fallback so the demo isn't blank
-      }
-
-      const data = octx.getImageData(0, 0, cols, rows).data;
-
-      // luminance field, gamma-lifted
-      const lum = new Float32Array(cols * rows);
-      for (let i = 0; i < cols * rows; i++) {
-        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-        lum[i] = Math.pow((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255, cfg.gamma);
-      }
-
-      const L = (x: number, y: number) =>
-        lum[Math.min(rows - 1, Math.max(0, y)) * cols + Math.min(cols - 1, Math.max(0, x))];
-
       grid = new Array<Cell>(cols * rows);
-      const rampMax = cfg.ramp.length - 1;
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const v = L(x, y);
+          const nx = x / cols;
+          const ny = y / rows;
+          // Gentle organic density field — two-octave sine blend
+          let d =
+            0.35 +
+            0.15 * Math.sin(nx * 4.7 + ny * 2.1) +
+            0.10 * Math.sin(nx * 1.3 - ny * 5.1 + 1.7);
+          d += 0.08 * Math.sin(nx * 8.3 + ny * 7.9 + 2.4);
+          d = Math.max(0, Math.min(1, d));
 
-          if (v < cfg.minLuminance) {
-            grid[y * cols + x] = { ch: "", lum: 0 };
-            continue;
-          }
-
-          // Sobel — this is what the naive "pairs" model misses entirely.
-          // Strong edges become orientation strokes; that's where the
-          // diagonal \ runs and vertical | strokes in the ref come from.
-          const gx =
-            -L(x - 1, y - 1) - 2 * L(x - 1, y) - L(x - 1, y + 1) +
-             L(x + 1, y - 1) + 2 * L(x + 1, y) + L(x + 1, y + 1);
-          const gy =
-            -L(x - 1, y - 1) - 2 * L(x, y - 1) - L(x + 1, y - 1) +
-             L(x - 1, y + 1) + 2 * L(x, y + 1) + L(x + 1, y + 1);
-          const mag = Math.hypot(gx, gy) / 4;
-
-          let ch: string;
-          if (mag > cfg.edgeThreshold) {
-            // Quantize edge NORMAL angle to a stroke direction.
-            // atan2(gy,gx) is the gradient (normal); the stroke runs
-            // perpendicular to it, hence the +PI/2.
-            const angle = Math.atan2(gy, gx) + Math.PI / 2;
-            const q = Math.round(((angle + Math.PI) / Math.PI) * 4) % 4;
-            ch = cfg.edgeGlyphs[q];
-          } else {
-            ch = cfg.ramp[Math.min(rampMax, Math.round(v * rampMax))];
-          }
-
-          grid[y * cols + x] = ch === " " ? { ch: "", lum: 0 } : { ch, lum: v };
+          const rampIdx = Math.round(d * rampMax);
+          const ch = cfg.ramp[rampIdx];
+          grid[y * cols + x] = { ch: ch === " " ? "" : ch };
         }
       }
     }
 
-    // Procedural fallback: layered value-noise "fBm" so the component works
-    // with no `src`. Replace with a real image for the reference look.
-    function drawProceduralField(octx: CanvasRenderingContext2D, w: number, h: number) {
-      const img = octx.createImageData(w, h);
-      const rand = (x: number, y: number) => {
-        const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-        return s - Math.floor(s);
-      };
-      const noise = (x: number, y: number) => {
-        const xi = Math.floor(x), yi = Math.floor(y);
-        const xf = x - xi, yf = y - yi;
-        const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-        return (
-          rand(xi, yi) * (1 - u) * (1 - v) +
-          rand(xi + 1, yi) * u * (1 - v) +
-          rand(xi, yi + 1) * (1 - u) * v +
-          rand(xi + 1, yi + 1) * u * v
-        );
-      };
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          let v = 0, amp = 0.55, f = 0.045;
-          for (let o = 0; o < 4; o++) { v += noise(x * f, y * f) * amp; amp *= 0.5; f *= 2.1; }
-          const g = Math.max(0, Math.min(1, (v - 0.28) * 1.6)) * 255;
-          const i = (y * w + x) * 4;
-          img.data[i] = img.data[i + 1] = img.data[i + 2] = g;
-          img.data[i + 3] = 255;
-        }
-      }
-      octx.putImageData(img, 0, 0);
+    // ── Parse origin DOM element position ───────────────────────────────
+    function updateOrigin() {
+      const el = document.querySelector(originSelector);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Center of the element
+      origin.x = rect.left + rect.width / 2;
+      origin.y = rect.top + rect.height / 2;
     }
 
-    // ── Sizing ───────────────────────────────────────────────────────────
+    // ── Resize ──────────────────────────────────────────────────────────
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       cssW = window.innerWidth;
@@ -240,28 +146,41 @@ export default function AsciiFlashlight({ src, config, style, className }: Props
       cv.style.width = `${cssW}px`;
       cv.style.height = `${cssH}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      updateOrigin();
       buildGrid();
     }
 
-    // ── Render loop ──────────────────────────────────────────────────────
+    // ── Render loop ─────────────────────────────────────────────────────
     function frame(now: number) {
       if (disposed) return;
       const dt = Math.min((now - lastT) / 1000, 0.05);
       lastT = now;
 
-      // dt-corrected exponential smoothing for the beam follow
+      // Smooth cursor follow
       const k = 1 - Math.pow(1 - cfg.followLerp, dt * 60);
       pos.x += (target.x - pos.x) * k;
       pos.y += (target.y - pos.y) * k;
 
-      // Breathing — THE pulsation. Sine on the radius, ~5s period.
+      // Re-check origin element position (in case it moved)
+      updateOrigin();
+
+      // Direction vector from origin to cursor
+      const dx = pos.x - origin.x;
+      const dy = pos.y - origin.y;
+      const dist = Math.hypot(dx, dy);
+      // Normalized direction from origin to cursor
+      const dirX = dist > 0 ? dx / dist : 1;
+      const dirY = dist > 0 ? dy / dist : 0;
+
+      // Breathing — THE pulsation. ±10% radius scale on ~5s period
       const breath = reducedMotion
         ? 1
         : 1 + cfg.breathAmp * Math.sin((now / 1000) * ((Math.PI * 2) / cfg.breathPeriod));
-      const rx = cfg.beamRx * breath;
-      const ry = cfg.beamRy * breath;
 
-      // Full black — nothing exists outside the beam.
+      const beamLength = cfg.beamLength * breath;
+      const cosThresh = Math.cos(cfg.beamAngleSpread);
+
+      // Full clear — page bg
       ctx.fillStyle = cfg.bgColor;
       ctx.fillRect(0, 0, cssW, cssH);
 
@@ -269,38 +188,101 @@ export default function AsciiFlashlight({ src, config, style, className }: Props
       ctx.textBaseline = "top";
       ctx.fillStyle = cfg.inkColor;
 
-      // Only touch cells inside the beam's bounding box (~900 cells, cheap).
-      const x0 = Math.max(0, Math.floor((pos.x - rx) / cfg.cellW));
-      const x1 = Math.min(cols - 1, Math.ceil((pos.x + rx) / cfg.cellW));
-      const y0 = Math.max(0, Math.floor((pos.y - ry) / cfg.cellH));
-      const y1 = Math.min(rows - 1, Math.ceil((pos.y + ry) / cfg.cellH));
+      const halfW = cfg.cellW / 2;
+      const halfH = cfg.cellH / 2;
 
-      const halfW = cfg.cellW / 2, halfH = cfg.cellH / 2;
+      // Bounding box around the beam cone for iteration
+      // Cone: from origin, direction dirX/Y, spread angle, max length
+      // Compute rough bounds to avoid scanning entire grid
+      const spreadDeg = cfg.beamAngleSpread;
+      // Approximate cone bounding box
+      const absDirX = Math.abs(dirX);
+      const absDirY = Math.abs(dirY);
+      const edgeFactor = Math.tan(spreadDeg);
+      let coneLeft = origin.x + (dx < 0 ? Math.min(0, dx) : 0);
+      let coneRight = origin.x + (dx > 0 ? Math.max(0, dx) : 0);
+      let coneTop = origin.y + (dy < 0 ? Math.min(0, dy) : 0);
+      let coneBottom = origin.y + (dy > 0 ? Math.max(0, dy) : 0);
+      // Add spread margin
+      const margin = beamLength * edgeFactor + cfg.cellW;
+      coneLeft -= margin;
+      coneRight += margin;
+      coneTop -= margin;
+      coneBottom += margin;
+
+      const x0 = Math.max(0, Math.floor((coneLeft) / cfg.cellW));
+      const x1 = Math.min(cols - 1, Math.ceil(coneRight / cfg.cellW));
+      const y0 = Math.max(0, Math.floor((coneTop) / cfg.cellH));
+      const y1 = Math.min(rows - 1, Math.ceil(coneBottom / cfg.cellH));
 
       for (let gy = y0; gy <= y1; gy++) {
         for (let gx = x0; gx <= x1; gx++) {
           const cell = grid[gy * cols + gx];
           if (!cell || !cell.ch) continue;
 
-          // Normalized elliptical distance from beam center (0 center, 1 rim)
-          const dx = (gx * cfg.cellW + halfW - pos.x) / rx;
-          const dy = (gy * cfg.cellH + halfH - pos.y) / ry;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d >= 1) continue;
+          const cx = gx * cfg.cellW + halfW;
+          const cy = gy * cfg.cellH + halfH;
 
-          // Plateau + smoothstep shell — measured, NOT a linear gradient.
-          let a = 1;
-          if (d > cfg.plateau) {
-            const t = (d - cfg.plateau) / (1 - cfg.plateau); // 0..1 across the shell
-            a = 1 - t * t * (3 - 2 * t);                     // smoothstep down
+          // Vector from origin to this cell
+          const cdx = cx - origin.x;
+          const cdy = cy - origin.y;
+          const la = Math.hypot(cdx, cdy);
+
+          // Inside beam length?
+          if (la > beamLength) continue;
+
+          // Angle from centerline — dot product with dir
+          let dot = 0;
+          if (la > 0) {
+            dot = (cdx * dirX + cdy * dirY) / la;
+            if (dot < cosThresh) continue; // outside cone angle
           }
 
-          // Slight luminance coupling so dense art reads a touch brighter.
-          a *= 0.55 + 0.45 * cell.lum;
+          // Distance along the beam (0 = origin, 1 = full length)
+          const t = Math.min(la / beamLength, 1);
+          if (t >= 1) continue;
+
+          // Plateau + smoothstep shell falloff along beam axis
+          let a = 1;
+          if (t > cfg.plateau) {
+            const s = (t - cfg.plateau) / (1 - cfg.plateau);
+            a = 1 - s * s * (3 - 2 * s);
+          }
+
+          // Perpendicular distance from centerline — additional falloff for cone edges
+          if (la > 0) {
+            // Normalized perpendicular distance: 0 = centerline, 1 = cone edge
+            const perpNorm = Math.sqrt(1 - dot * dot) / Math.sin(spreadDeg);
+            if (perpNorm > 1) continue;
+
+            // Same plateau+smoothstep for perpendicular direction
+            let perpA = 1;
+            if (perpNorm > cfg.plateau) {
+              const ps = (perpNorm - cfg.plateau) / (1 - cfg.plateau);
+              perpA = 1 - ps * ps * (3 - 2 * ps);
+            }
+            a *= perpA;
+          }
+
           if (a < 0.02) continue;
 
-          ctx.globalAlpha = a;
-          ctx.fillText(cell.ch, gx * cfg.cellW, gy * cfg.cellH);
+          // The breathing effect alternates visible cells' density levels.
+          // As the beam pulses, a secondary wave sweeps through the lit cells
+          // shifting which glyph appears — this creates the sense of the beam
+          // "breathing" the characters between densities.
+          const densityShift = Math.sin(
+            (now / 1000) * ((Math.PI * 2) / cfg.breathPeriod) + t * 3.0 + (gx + gy) * 0.3
+          );
+          // Shift ramp index by 0-2 steps based on breathing phase
+          const shift = Math.round(densityShift * 1.5);
+          const baseIdx = Math.max(0, Math.min(rampMax, cfg.ramp.indexOf(cell.ch)));
+
+          // Alternate between base and base+shift (wrapping for dramatic pulse)
+          const altIdx = Math.max(0, Math.min(rampMax, baseIdx + shift));
+          const ch = altIdx !== baseIdx ? cfg.ramp[altIdx] : cell.ch;
+
+          ctx.globalAlpha = a * 0.12;
+          ctx.fillText(ch, gx * cfg.cellW, gy * cfg.cellH);
         }
       }
       ctx.globalAlpha = 1;
@@ -308,28 +290,19 @@ export default function AsciiFlashlight({ src, config, style, className }: Props
       raf = requestAnimationFrame(frame);
     }
 
-    // ── Input ────────────────────────────────────────────────────────────
+    // ── Input ───────────────────────────────────────────────────────────
     const onMove = (e: PointerEvent) => { target.x = e.clientX; target.y = e.clientY; };
     const onTouch = (e: TouchEvent) => {
-      if (e.touches[0]) { target.x = e.touches[0].clientX; target.y = e.touches[0].clientY; }
+      if (e.touches[0]) {
+        target.x = e.touches[0].clientX;
+        target.y = e.touches[0].clientY;
+      }
     };
 
-    // ── Boot ─────────────────────────────────────────────────────────────
-    function start() {
-      resize();
-      lastT = performance.now();
-      raf = requestAnimationFrame(frame);
-    }
-
-    if (src) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => { if (!disposed) { imgEl = img; start(); } };
-      img.onerror = () => { if (!disposed) start(); }; // fall back to procedural
-      img.src = src;
-    } else {
-      start();
-    }
+    // ── Boot ────────────────────────────────────────────────────────────
+    resize();
+    lastT = performance.now();
+    raf = requestAnimationFrame(frame);
 
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("touchmove", onTouch, { passive: true });
@@ -342,7 +315,7 @@ export default function AsciiFlashlight({ src, config, style, className }: Props
       window.removeEventListener("touchmove", onTouch);
       window.removeEventListener("resize", resize);
     };
-  }, [src, config]);
+  }, [originSelector, config]);
 
   return (
     <canvas
@@ -352,8 +325,8 @@ export default function AsciiFlashlight({ src, config, style, className }: Props
         position: "fixed",
         inset: 0,
         display: "block",
-        background: "#000",
-        cursor: "none", // the beam IS the cursor
+        background: "#0f1923",
+        cursor: "none",
         ...style,
       }}
     />

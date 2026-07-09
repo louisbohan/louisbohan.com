@@ -119,6 +119,7 @@ function Hero() {
         <FadeInUp delay={0.3}>
           <div className="mt-8 flex items-center justify-center gap-4">
             <a
+              id="github-icon"
               href="https://github.com/louisbohan"
               target="_blank"
               className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
@@ -405,7 +406,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <AsciiFlashlight src="/constitution-art.png" />
+      <AsciiFlashlight originSelector="#github-icon" />
       <Nav />
       <Hero />
       <SummaryStrip />
