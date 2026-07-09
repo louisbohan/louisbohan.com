@@ -7,11 +7,7 @@ interface Props {
 }
 
 // Grayscale pairs — each pair pulses between its two characters
-// Lightest → . and :   (sparse)
-//           → - and =   (mid-light)
-//           → + and =   (mid)
-//           → + and #   (mid-dark)
-// Darkest  → # and @   (dense)
+// lightest → darkest
 const PAIRS: [string, string][] = [
   [".", ":"],
   ["-", "="],
@@ -22,8 +18,6 @@ const PAIRS: [string, string][] = [
 
 export default function BackgroundAsciiMist({ className = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const timeRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,108 +25,124 @@ export default function BackgroundAsciiMist({ className = "" }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const CELL = 14;
+
+    // Raw + smoothed cursor. Start off-screen so nothing shows until move.
+    const target = { x: -9999, y: -9999 };
+    const cursor = { x: -9999, y: -9999 };
+    let hasMoved = false;
+
+    type Cell = { x: number; y: number; phase: number; speed: number; pairIdx: number };
+    let grid: Cell[] = [];
+
+    const buildGrid = (w: number, h: number) => {
+      grid = [];
+      const cols = Math.ceil(w / CELL) + 1;
+      const rows = Math.ceil(h / CELL) + 1;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const nx = c / cols;
+          const ny = r / rows;
+          // Smooth pseudo-noise field → gentle grayscale gradient across page
+          const n =
+            0.5 +
+            0.28 * Math.sin(nx * 5.1 + ny * 2.4) +
+            0.22 * Math.sin(nx * 2.3 - ny * 4.7 + 1.7);
+          const pairIdx = Math.max(
+            0,
+            Math.min(PAIRS.length - 1, Math.floor(n * PAIRS.length))
+          );
+          grid.push({
+            x: c * CELL + CELL / 2,
+            y: r * CELL + CELL / 2,
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.5 + Math.random() * 0.5, // each cell pulses at its own pace
+            pairIdx,
+          });
+        }
+      }
+    };
+
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // no cumulative scaling
+      buildGrid(w, h);
     };
     resize();
     window.addEventListener("resize", resize);
 
-    // Track mouse
     const onMouse = (e: MouseEvent) => {
-      const rect = canvas!.getBoundingClientRect();
-      mouseRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
+      target.x = e.clientX;
+      target.y = e.clientY;
+      if (!hasMoved) {
+        cursor.x = target.x;
+        cursor.y = target.y;
+        hasMoved = true;
+      }
     };
     window.addEventListener("mousemove", onMouse);
 
     let animId: number;
 
-    const CELL = 14;
-    const COLS = 64;
-    const ROWS = 40;
-
-    // Pre-compute grid
-    const grid: { x: number; y: number; phase: number; pairIdx: number }[] = [];
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const nx = c / COLS;
-        const ny = r / ROWS;
-        const gradient = 0.1 + 0.8 * (0.5 * Math.sin(nx * 3.7 + ny * 2.3) + 0.5);
-        const pairIdx = Math.min(
-          Math.floor(gradient * PAIRS.length),
-          PAIRS.length - 1
-        );
-        grid.push({
-          x: c * CELL + CELL / 2,
-          y: r * CELL + CELL / 2,
-          phase: Math.random() * Math.PI * 2,
-          pairIdx,
-        });
-      }
-    }
-
     const animate = (timestamp: number) => {
-      timeRef.current = timestamp * 0.001;
-      const rect = canvas!.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const t = timestamp * 0.001;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
 
-      // Full clear — no trail
-      ctx!.clearRect(0, 0, w, h);
+      // Clean clear — no trail
+      ctx.clearRect(0, 0, w, h);
 
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      const t = timeRef.current;
+      // Smooth cursor follow (removes jitter)
+      cursor.x += (target.x - cursor.x) * 0.14;
+      cursor.y += (target.y - cursor.y) * 0.14;
 
-      // Oval flashlight beam parameters
-      // Horizontal radius larger than vertical (oval shape)
-      const beamRadiusX = 280;
-      const beamRadiusY = 200;
-      // Pulsation: beam slowly breathes
-      const beamPulse = 0.9 + 0.1 * Math.sin(t * 0.4);
+      // Oval beam: 280px wide × 200px tall, breathing slowly
+      const breathe = 1 + 0.08 * Math.sin(t * 0.5);
+      const rx = 140 * breathe;
+      const ry = 100 * breathe;
+
+      ctx.font = `${CELL}px "JetBrains Mono", ui-monospace, monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      // Only iterate cells in the beam's bounding box
+      const minX = cursor.x - rx - CELL;
+      const maxX = cursor.x + rx + CELL;
+      const minY = cursor.y - ry - CELL;
+      const maxY = cursor.y + ry + CELL;
 
       for (let i = 0; i < grid.length; i++) {
         const cell = grid[i];
-        if (cell.x < -CELL || cell.x > w + CELL) continue;
-        if (cell.y < -CELL || cell.y > h + CELL) continue;
+        if (cell.x < minX || cell.x > maxX || cell.y < minY || cell.y > maxY) continue;
 
-        // Distance from cursor, normalized by oval radii
-        const dx = (cell.x - mx) / (beamRadiusX * beamPulse);
-        const dy = (cell.y - my) / (beamRadiusY * beamPulse);
+        const dx = (cell.x - cursor.x) / rx;
+        const dy = (cell.y - cursor.y) / ry;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist >= 1) continue;
 
-        // Inside the oval beam?
-        if (dist > 1.0) continue;
+        // Soft falloff: smoothstep from edge (0) to center (1)
+        const depth = 1 - dist;
+        const illumination = depth * depth * (3 - 2 * depth);
+        if (illumination < 0.01) continue;
 
-        // How far inside: 1 = edge, 0 = center
-        const beamDepth = 1 - dist;
-        // Soft falloff at edges
-        const illumination = beamDepth * beamDepth * (3 - 2 * beamDepth);
-
-        // Only show if illuminated past threshold
-        if (illumination < 0.005) continue;
-
+        // Character pulse: slow sine per cell, phase-offset for organic ripple.
+        // Crossfade between pair members rather than hard swap.
+        const pulse = Math.sin(t * 0.7 * cell.speed + cell.phase); // -1..1
         const [charA, charB] = PAIRS[cell.pairIdx];
-
-        // Pulse between A and B — this IS the pulsating illumination
-        // The slow wave makes chars alternate
-        const pulse = Math.sin(t * 0.6 + cell.phase);
         const char = pulse < 0 ? charA : charB;
+        // Ease opacity near the swap point so the flip reads as a gentle pulse
+        const pulseEase = 0.75 + 0.25 * Math.abs(pulse);
 
-        // Opacity: bright at center of beam, dim at edges, plus pulse
-        const opacity = 0.01 + illumination * 0.07;
+        const opacity = illumination * 0.09 * pulseEase;
 
-        ctx!.font = `${CELL}px "JetBrains Mono", monospace`;
-        ctx!.textAlign = "center";
-        ctx!.textBaseline = "middle";
-        ctx!.fillStyle = `rgba(240, 236, 228, ${opacity})`;
-        ctx!.fillText(char, cell.x, cell.y);
+        ctx.fillStyle = `rgba(240, 236, 228, ${opacity})`;
+        ctx.fillText(char, cell.x, cell.y);
       }
 
       animId = requestAnimationFrame(animate);
@@ -150,7 +160,7 @@ export default function BackgroundAsciiMist({ className = "" }: Props) {
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 w-full h-full pointer-events-none z-0 ${className}`}
+      className={`fixed inset-0 pointer-events-none z-0 ${className}`}
       aria-hidden="true"
     />
   );
