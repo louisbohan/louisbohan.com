@@ -13,7 +13,7 @@ import {
   Palette,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
-import AsciiParticleField from "@/components/ascii-particle-field";
+import CursorAsciiTrail from "@/components/cursor-ascii-trail";
 
 // ── Utility ──
 
@@ -405,7 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <AsciiParticleField density="dense" />
+      <CursorAsciiTrail />
       <Nav />
       <Hero />
       <SummaryStrip />
