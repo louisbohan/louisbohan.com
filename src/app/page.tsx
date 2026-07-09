@@ -405,7 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <CursorAsciiTrail />
+      <CursorAsciiTrail srcImage="/constitution-art.png" />
       <Nav />
       <Hero />
       <SummaryStrip />
