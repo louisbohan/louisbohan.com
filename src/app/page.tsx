@@ -13,7 +13,7 @@ import {
   Palette,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
-import BackgroundAsciiMist from "@/components/background-ascii-mist";
+import AsciiFlashlight from "@/components/AsciiFlashlight";
 
 // ── Utility ──
 
@@ -405,7 +405,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="relative">
-      <BackgroundAsciiMist />
+      <AsciiFlashlight src="/constitution-art.png" />
       <Nav />
       <Hero />
       <SummaryStrip />
