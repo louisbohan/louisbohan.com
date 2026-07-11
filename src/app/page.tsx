@@ -5,12 +5,15 @@ import {
   ArrowUpRight,
   Mail,
   ChevronDown,
-  Terminal,
+  Code2,
+  Building2,
+  Bot,
+  TrendingUp,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
 import AsciiFlashlight from "@/components/AsciiFlashlight";
 
-// ── Utility ──
+// ── Icons ──
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -27,6 +30,18 @@ function LinkedInIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+function ExternalLinkIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+// ── Shared Components ──
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -51,6 +66,14 @@ function FadeInUp({ children, delay = 0 }: { children: React.ReactNode; delay?: 
   );
 }
 
+function Tag({ children }: { children: string }) {
+  return (
+    <span className="inline-block text-xs text-amber-500/80 bg-amber-500/8 px-2.5 py-1 rounded-full border border-amber-500/15">
+      {children}
+    </span>
+  );
+}
+
 // ── Nav ──
 
 function Nav() {
@@ -61,12 +84,12 @@ function Nav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/70 border-b border-border/30">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-        <span
-          className="text-sm font-semibold tracking-wide text-foreground/80 cursor-pointer"
+        <button
+          className="text-sm font-semibold tracking-wide text-foreground/80 hover:text-foreground transition-colors"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           louisbohan.com
-        </span>
+        </button>
         <div className="flex items-center gap-5 text-sm text-muted-foreground">
           <button onClick={() => scrollTo("work")} className="hover:text-foreground transition-colors">
             Work
@@ -87,9 +110,12 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="min-h-[85vh] relative flex items-center justify-center px-6 pt-14 overflow-hidden">
-      <div className="max-w-3xl mx-auto text-center">
+    <section className="relative min-h-[90vh] flex items-center justify-center px-6 pt-14 overflow-hidden">
+      {/* Subtle gradient orbs for depth */}
+      <div aria-hidden className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-amber-500/[0.03] blur-3xl" />
+      <div aria-hidden className="absolute bottom-1/4 -right-32 w-80 h-80 rounded-full bg-amber-500/[0.04] blur-3xl" />
 
+      <div className="max-w-3xl mx-auto text-center relative z-10">
         <FadeInUp delay={0.1}>
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
             Louis Bohan
@@ -97,14 +123,14 @@ function Hero() {
         </FadeInUp>
 
         <FadeInUp delay={0.15}>
-          <p className="mt-4 text-sm md:text-base text-amber-500/80 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-5 text-sm md:text-base text-amber-500/80 max-w-xl mx-auto leading-relaxed">
             Acting Head – Partnership Development @ Odoo | ERP & SaaS Channel Strategy | Partner-Led Growth | MBA | Enablement & Alliances
           </p>
         </FadeInUp>
 
         <FadeInUp delay={0.2}>
           <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            I specialize in building and scaling partner ecosystems for ERP and SaaS companies, with a focus on channel recruitment, enablement, and go-to-market execution. At Odoo, I\'ve helped scale our North American partner program by 5x over four years, leading a team that has closed 500+ new implementation and channel partner accounts.
+            ERP partnerships, full-stack apps, and AI-powered tools — from concept to deployment to revenue. Currently leading channel growth at Odoo.
           </p>
         </FadeInUp>
 
@@ -114,7 +140,9 @@ function Hero() {
               id="github-icon"
               href="https://github.com/louisbohan"
               target="_blank"
-              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              rel="noopener noreferrer"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:border-amber-500/30 border border-border/50 transition-all"
+              aria-label="GitHub Profile"
               title="GitHub"
             >
               <GitHubIcon className="w-5 h-5" />
@@ -122,14 +150,17 @@ function Hero() {
             <a
               href="https://www.linkedin.com/in/louis-bohan-9b31746"
               target="_blank"
-              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              rel="noopener noreferrer"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:border-amber-500/30 border border-border/50 transition-all"
+              aria-label="LinkedIn Profile"
               title="LinkedIn"
             >
               <LinkedInIcon className="w-5 h-5" />
             </a>
             <a
               href="mailto:lou@louisbohan.com"
-              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:border-amber-500/30 border border-border/50 transition-all"
+              aria-label="Send Email"
               title="Email"
             >
               <Mail className="w-5 h-5" />
@@ -151,57 +182,66 @@ function Hero() {
   );
 }
 
-// ── What I Do ──
+// ── Work / What I Do ──
 
 const roles = [
   {
-    title: "Channel & Partnership Lead",
+    title: "Channel & Partnership Development",
     company: "Odoo",
     description:
       "Acting Head — Partnership Development for North America. Scale partner programs, build GTM motion, design enablement frameworks. Grew partner ecosystem 5x to 500+ accounts. Closed 60+ new partner accounts personally, exceeding MRR targets by 300%+.",
     tags: ["Channel Sales", "Partner Enablement", "CRM Pipelines", "GTM Strategy"],
+    icon: <Building2 className="w-5 h-5" />,
   },
   {
-    title: "Full-Stack Builder",
-    company: "Side projects & clients",
+    title: "Full-Stack Engineering",
+    company: "Side Projects & Clients",
     description:
-      "From idea to deployed app in days. Next.js, TypeScript, Tailwind, SQLite at the edge. Ship fast, iterate hard.",
+      "Rapid prototyping to deployed app in days. Next.js, TypeScript, Tailwind, SQLite at the edge. Ship fast, iterate hard.",
     tags: ["Next.js", "TypeScript", "TailwindCSS", "Motion", "D1/KV"],
+    icon: <Code2 className="w-5 h-5" />,
   },
   {
     title: "AI Tooling & Automation",
-    company: "Vibe coder",
+    company: "Vibe Coder",
     description:
       "LLM routing proxies, brand scanning agents, SMS chatbots, automated reporting. Real tools that solve real problems.",
     tags: ["Claude/OpenAI APIs", "Prompt Engineering", "Automation Pipelines", "OpenClaw"],
+    icon: <Bot className="w-5 h-5" />,
   },
   {
-    title: "Commercial Proof",
-      company: "Revenue-driven development",
+    title: "Revenue-Focused Building",
+    company: "Product Validation",
     description:
-      "Built products that people pay for. Side projects with MRR. Know the difference between a feature and a product.",
+      "Built products that people pay for. Know the difference between a feature and a product. Side projects with real MRR.",
     tags: ["Product-Market Fit", "Pricing", "Customer Dev", "Monetization"],
+    icon: <TrendingUp className="w-5 h-5" />,
   },
 ];
 
 function WorkSection() {
   return (
-    <section id="work" className="py-16 md:py-24 px-6">
+    <section id="work" className="py-20 md:py-28 px-6">
       <div className="max-w-4xl mx-auto">
         <FadeInUp>
           <SectionHeading>What I Do</SectionHeading>
-          <p className="mt-3 text-muted-foreground max-w-xl text-sm">
-            I sit at the intersection of enterprise software sales and rapid AI-driven development.
-            Most people can do one. I do both.
+          <p className="mt-3 text-muted-foreground max-w-2xl text-sm leading-relaxed">
+            I specialize in building and scaling partner ecosystems for ERP and SaaS companies, with a focus on channel recruitment, enablement, and go-to-market execution. At Odoo, I&apos;ve helped scale our North American partner program by 5x over four years, leading a team that has closed 500+ new implementation and channel partner accounts.
           </p>
         </FadeInUp>
 
         <div className="mt-10 grid md:grid-cols-6 gap-4">
-          {/* Full-width: Channel & Partnership Lead */}
+          {/* Full-width: Channel card */}
           <FadeInUp delay={0.1}>
-            <div className="card-base p-6 h-full md:col-span-6">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-foreground/90">{roles[0].title}</h3>
+            <div className="card-base p-6 h-full md:col-span-6 group relative overflow-hidden">
+              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                    {roles[0].icon}
+                  </div>
+                  <h3 className="font-semibold text-foreground/90">{roles[0].title}</h3>
+                </div>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
                   {roles[0].company}
                 </span>
@@ -209,9 +249,7 @@ function WorkSection() {
               <p className="text-sm text-muted-foreground leading-relaxed">{roles[0].description}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {roles[0].tags.map((t) => (
-                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                    {t}
-                  </span>
+                  <Tag key={t}>{t}</Tag>
                 ))}
               </div>
             </div>
@@ -219,48 +257,58 @@ function WorkSection() {
 
           {/* Side-by-side: Full-Stack + AI Tooling */}
           <FadeInUp delay={0.2}>
-            <div className="card-base p-6 h-full md:col-span-3">
-              <div className="flex items-start justify-between mb-2">
+            <div className="card-base p-6 h-full md:col-span-3 group relative overflow-hidden">
+              <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
+              <div className="flex items-center gap-2.5 mb-3 relative z-10">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                  {roles[1].icon}
+                </div>
                 <h3 className="font-semibold text-foreground/90">{roles[1].title}</h3>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  {roles[1].company}
-                </span>
               </div>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full mb-3 inline-block">
+                {roles[1].company}
+              </span>
               <p className="text-sm text-muted-foreground leading-relaxed">{roles[1].description}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {roles[1].tags.map((t) => (
-                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                    {t}
-                  </span>
+                  <Tag key={t}>{t}</Tag>
                 ))}
               </div>
             </div>
           </FadeInUp>
 
           <FadeInUp delay={0.25}>
-            <div className="card-base p-6 h-full md:col-span-3">
-              <div className="flex items-start justify-between mb-2">
+            <div className="card-base p-6 h-full md:col-span-3 group relative overflow-hidden">
+              <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
+              <div className="flex items-center gap-2.5 mb-3 relative z-10">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                  {roles[2].icon}
+                </div>
                 <h3 className="font-semibold text-foreground/90">{roles[2].title}</h3>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  {roles[2].company}
-                </span>
               </div>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full mb-3 inline-block">
+                {roles[2].company}
+              </span>
               <p className="text-sm text-muted-foreground leading-relaxed">{roles[2].description}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {roles[2].tags.map((t) => (
-                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                    {t}
-                  </span>
+                  <Tag key={t}>{t}</Tag>
                 ))}
               </div>
             </div>
           </FadeInUp>
 
-          {/* Full-width: Commercial Proof */}
+          {/* Full-width: Commercial Proof / Revenue */}
           <FadeInUp delay={0.3}>
-            <div className="card-base p-6 h-full md:col-span-6">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
+            <div className="card-base p-6 h-full md:col-span-6 group relative overflow-hidden">
+              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                    {roles[3].icon}
+                  </div>
+                  <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
+                </div>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
                   {roles[3].company}
                 </span>
@@ -268,9 +316,7 @@ function WorkSection() {
               <p className="text-sm text-muted-foreground leading-relaxed">{roles[3].description}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {roles[3].tags.map((t) => (
-                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                    {t}
-                  </span>
+                  <Tag key={t}>{t}</Tag>
                 ))}
               </div>
             </div>
@@ -316,12 +362,12 @@ const projects = [
 
 function ProjectsSection() {
   return (
-    <section id="projects" className="py-16 md:py-24 px-6">
+    <section id="projects" className="py-20 md:py-28 px-6">
       <div className="max-w-4xl mx-auto">
         <FadeInUp>
           <SectionHeading>Shipped</SectionHeading>
           <p className="mt-3 text-muted-foreground max-w-xl text-sm">
-            Things I've built and deployed — from open-source tools to enterprise systems.
+            Things I&apos;ve built and deployed — from open-source tools to enterprise systems.
           </p>
         </FadeInUp>
 
@@ -333,32 +379,32 @@ function ProjectsSection() {
                   href={p.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block card-base p-6 h-full group"
+                  className="block card-base p-6 h-full group relative overflow-hidden"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-foreground/90">{p.title}</h3>
-                    <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 ml-2" />
+                  <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+                  <div className="flex items-start justify-between mb-2 relative z-10">
+                    <h3 className="font-semibold text-foreground/90 group-hover:text-amber-500 transition-colors">
+                      {p.title}
+                    </h3>
+                    <ExternalLinkIcon />
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {p.tags.map((t) => (
-                      <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                        {t}
-                      </span>
+                      <Tag key={t}>{t}</Tag>
                     ))}
                   </div>
                 </a>
               ) : (
-                <div className="card-base p-6 h-full group">
-                  <div className="flex items-start justify-between mb-2">
+                <div className="card-base p-6 h-full group relative overflow-hidden">
+                  <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+                  <div className="flex items-start justify-between mb-2 relative z-10">
                     <h3 className="font-semibold text-foreground/90">{p.title}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {p.tags.map((t) => (
-                      <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                        {t}
-                      </span>
+                      <Tag key={t}>{t}</Tag>
                     ))}
                   </div>
                 </div>
@@ -375,7 +421,7 @@ function ProjectsSection() {
 
 function ContactSection() {
   return (
-    <section id="contact" className="py-16 md:py-24 px-6">
+    <section id="contact" className="py-20 md:py-28 px-6">
       <div className="max-w-xl mx-auto text-center">
         <FadeInUp>
           <SectionHeading>Get In Touch</SectionHeading>
@@ -386,10 +432,10 @@ function ContactSection() {
 
         <FadeInUp delay={0.15}>
           <div className="mt-10 card-base p-8">
-            <div className="space-y-4">
+            <div className="space-y-3">
               <a
                 href="mailto:lou@louisbohan.com"
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 transition-colors group"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 border border-border/30 hover:border-amber-500/20 transition-all group"
               >
                 <span className="flex items-center gap-3 text-sm">
                   <Mail className="w-4 h-4 text-amber-500" />
@@ -400,7 +446,8 @@ function ContactSection() {
               <a
                 href="https://github.com/louisbohan"
                 target="_blank"
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 transition-colors group"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 border border-border/30 hover:border-amber-500/20 transition-all group"
               >
                 <span className="flex items-center gap-3 text-sm">
                   <GitHubIcon className="w-4 h-4 text-amber-500" />
@@ -411,11 +458,12 @@ function ContactSection() {
               <a
                 href="https://www.linkedin.com/in/louis-bohan-9b31746"
                 target="_blank"
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 transition-colors group"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-amber-500/5 border border-border/30 hover:border-amber-500/20 transition-all group"
               >
                 <span className="flex items-center gap-3 text-sm">
                   <LinkedInIcon className="w-4 h-4 text-amber-500" />
-                  <span>linkedin.com/in/louis-bohan-9b31746</span>
+                  <span>linkedin.com/in/louis-bohan</span>
                 </span>
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </a>
@@ -433,7 +481,7 @@ function Footer() {
   return (
     <footer className="border-t border-border/30 py-8 px-6 mt-12">
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>© {new Date().getFullYear()} Louis Bohan</span>
+        <span>&copy; {new Date().getFullYear()} Louis Bohan</span>
         <span>Built with Next.js on Vercel</span>
       </div>
     </footer>
