@@ -5,12 +5,7 @@ import {
   ArrowUpRight,
   Mail,
   ChevronDown,
-  Hammer,
-  Briefcase,
-  Code2,
-  DollarSign,
   Terminal,
-  Palette,
 } from "lucide-react";
 import { motion, useInView } from "motion/react";
 import AsciiFlashlight from "@/components/AsciiFlashlight";
@@ -94,50 +89,50 @@ function Hero() {
   return (
     <section className="min-h-[85vh] relative flex items-center justify-center px-6 pt-14 overflow-hidden">
       <div className="max-w-3xl mx-auto text-center">
-        <FadeInUp>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-medium mb-8">
-            <Palette className="w-3 h-3" />
-            Redesign in progress — v2 preview
-          </div>
-        </FadeInUp>
 
         <FadeInUp delay={0.1}>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
-            I build{" "}
-            <span className="text-amber-500">software that sells</span>.
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
+            Louis Bohan
           </h1>
         </FadeInUp>
 
+        <FadeInUp delay={0.15}>
+          <p className="mt-4 text-lg md:text-2xl text-amber-500 font-medium">
+            Acting Head — Partnership Development @ Odoo
+          </p>
+        </FadeInUp>
+
         <FadeInUp delay={0.2}>
-          <p className="mt-6 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            ERP partnerships, full-stack apps, and AI-powered tools — from concept to deployment to revenue.
-            <br className="hidden md:block" />
-            Currently leading channel growth at <span className="text-foreground/80 font-medium">Odoo</span>.
+          <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            Enterprise tech sales professional who also builds. Scalable partner ecosystems, ERP channel strategy, and AI-powered software — from concept to deployment to revenue.
           </p>
         </FadeInUp>
 
         <FadeInUp delay={0.3}>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-8 flex items-center justify-center gap-5">
             <a
               id="github-icon"
               href="https://github.com/louisbohan"
               target="_blank"
-              className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              title="GitHub"
             >
-              <GitHubIcon />
+              <GitHubIcon className="w-5 h-5" />
             </a>
             <a
               href="https://www.linkedin.com/in/louis-bohan-9b31746"
               target="_blank"
-              className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              title="LinkedIn"
             >
-              <LinkedInIcon />
+              <LinkedInIcon className="w-5 h-5" />
             </a>
             <a
               href="mailto:lou@louisbohan.com"
-              className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-amber-500/10 transition-all"
+              title="Email"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-5 h-5" />
             </a>
           </div>
         </FadeInUp>
@@ -156,33 +151,6 @@ function Hero() {
   );
 }
 
-// ── Quick Summary Strip ──
-
-const summaryItems = [
-  { icon: Briefcase, label: "Channel Partnerships", detail: "Scaled programs 5x" },
-  { icon: Code2, label: "Full-Stack Apps", detail: "TypeScript + Next.js" },
-  { icon: DollarSign, label: "Revenue-Driven", detail: "Built products that sell" },
-  { icon: Terminal, label: "AI Tooling", detail: "LLM pipelines + agents" },
-];
-
-function SummaryStrip() {
-  return (
-    <section className="py-12 md:py-16 px-6">
-      <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-        {summaryItems.map((item, i) => (
-          <FadeInUp key={item.label} delay={i * 0.08}>
-            <div className="card-base p-5 text-center flex flex-col items-center gap-2">
-              <item.icon className="w-5 h-5 text-amber-500" />
-              <span className="text-sm font-semibold text-foreground/80">{item.label}</span>
-              <span className="text-xs text-muted-foreground">{item.detail}</span>
-            </div>
-          </FadeInUp>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 // ── What I Do ──
 
 const roles = [
@@ -190,7 +158,7 @@ const roles = [
     title: "Channel & Partnership Lead",
     company: "Odoo",
     description:
-      "Scale partner programs, build GTM motion, design enablement frameworks. Grew North American channel 5x to 500+ accounts.",
+      "Acting Head — Partnership Development for North America. Scale partner programs, build GTM motion, design enablement frameworks. Grew partner ecosystem 5x to 500+ accounts. Closed 60+ new partner accounts personally, exceeding MRR targets by 300%+.",
     tags: ["Channel Sales", "Partner Enablement", "CRM Pipelines", "GTM Strategy"],
   },
   {
@@ -228,27 +196,85 @@ function WorkSection() {
           </p>
         </FadeInUp>
 
-        <div className="mt-10 grid md:grid-cols-2 gap-4">
-          {roles.map((role, i) => (
-            <FadeInUp key={role.title} delay={i * 0.1}>
-              <div className="card-base p-6 h-full">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-foreground/90">{role.title}</h3>
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                    {role.company}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{role.description}</p>
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {role.tags.map((t) => (
-                    <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                      {t}
-                    </span>
-                  ))}
-                </div>
+        <div className="mt-10 grid md:grid-cols-6 gap-4">
+          {/* Full-width: Channel & Partnership Lead */}
+          <FadeInUp delay={0.1}>
+            <div className="card-base p-6 h-full md:col-span-6">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold text-foreground/90">{roles[0].title}</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                  {roles[0].company}
+                </span>
               </div>
-            </FadeInUp>
-          ))}
+              <p className="text-sm text-muted-foreground leading-relaxed">{roles[0].description}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {roles[0].tags.map((t) => (
+                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </FadeInUp>
+
+          {/* Side-by-side: Full-Stack + AI Tooling */}
+          <FadeInUp delay={0.2}>
+            <div className="card-base p-6 h-full md:col-span-3">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold text-foreground/90">{roles[1].title}</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                  {roles[1].company}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{roles[1].description}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {roles[1].tags.map((t) => (
+                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </FadeInUp>
+
+          <FadeInUp delay={0.25}>
+            <div className="card-base p-6 h-full md:col-span-3">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold text-foreground/90">{roles[2].title}</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                  {roles[2].company}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{roles[2].description}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {roles[2].tags.map((t) => (
+                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </FadeInUp>
+
+          {/* Full-width: Commercial Proof */}
+          <FadeInUp delay={0.3}>
+            <div className="card-base p-6 h-full md:col-span-6">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                  {roles[3].company}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{roles[3].description}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {roles[3].tags.map((t) => (
+                  <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </FadeInUp>
         </div>
       </div>
     </section>
@@ -263,7 +289,7 @@ const projects = [
     description:
       "Scans 50+ platforms to check brand name availability. DNS verification, AI strategist analysis, automated scoring.",
     tags: ["Next.js", "TypeScript", "Prisma", "Claude API", "TailwindCSS"],
-    link: null, // private repo — ask Lou for a demo or build one
+    link: "https://brand-availability-demo.vercel.app",
   },
   {
     title: "Prompt Router",
@@ -277,7 +303,7 @@ const projects = [
     description:
       "Interactive cost estimator for Bay Area contractors. Material selection, trade breakdowns, print-ready bid reports.",
     tags: ["Next.js", "TypeScript", "TailwindCSS", "Motion"],
-    link: "https://kitchen-remodel-demo.vercel.app",
+    link: "https://kitchen-remodel-estimator.vercel.app",
   },
   {
     title: "Odoo Partner Program Growth",
@@ -302,28 +328,41 @@ function ProjectsSection() {
         <div className="mt-10 grid md:grid-cols-2 gap-4">
           {projects.map((p, i) => (
             <FadeInUp key={p.title} delay={i * 0.1}>
-              <div className="card-base p-6 h-full group">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-foreground/90">{p.title}</h3>
-                  {p.link && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      className="text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                    </a>
-                  )}
+              {p.link ? (
+                <a
+                  href={p.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block card-base p-6 h-full group"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-foreground/90">{p.title}</h3>
+                    <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 ml-2" />
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {p.tags.map((t) => (
+                      <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </a>
+              ) : (
+                <div className="card-base p-6 h-full group">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-foreground/90">{p.title}</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {p.tags.map((t) => (
+                      <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {p.tags.map((t) => (
-                    <span key={t} className="text-xs text-amber-500/80 bg-amber-500/8 px-2 py-0.5 rounded-full border border-amber-500/15">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              )}
             </FadeInUp>
           ))}
         </div>
@@ -409,7 +448,6 @@ export default function Home() {
       <AsciiFlashlight originSelector="#github-icon" />
       <Nav />
       <Hero />
-      <SummaryStrip />
       <WorkSection />
       <ProjectsSection />
       <ContactSection />
