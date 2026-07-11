@@ -97,14 +97,14 @@ function Hero() {
         </FadeInUp>
 
         <FadeInUp delay={0.15}>
-          <p className="mt-4 text-lg md:text-2xl text-amber-500 font-medium">
-            Acting Head — Partnership Development @ Odoo
+          <p className="mt-4 text-sm md:text-base text-amber-500/80 max-w-xl mx-auto leading-relaxed">
+            Acting Head – Partnership Development @ Odoo | ERP & SaaS Channel Strategy | Partner-Led Growth | MBA | Enablement & Alliances
           </p>
         </FadeInUp>
 
         <FadeInUp delay={0.2}>
           <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            Enterprise tech sales professional who also builds. Scalable partner ecosystems, ERP channel strategy, and AI-powered software — from concept to deployment to revenue.
+            I specialize in building and scaling partner ecosystems for ERP and SaaS companies, with a focus on channel recruitment, enablement, and go-to-market execution. At Odoo, I\'ve helped scale our North American partner program by 5x over four years, leading a team that has closed 500+ new implementation and channel partner accounts.
           </p>
         </FadeInUp>
 
