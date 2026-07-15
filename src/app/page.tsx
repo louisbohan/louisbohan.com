@@ -230,10 +230,9 @@ function WorkSection() {
           </p>
         </FadeInUp>
 
-        <div className="mt-10 grid md:grid-cols-6 gap-4">
-          {/* Full-width: Channel card */}
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
           <FadeInUp delay={0.1}>
-            <div className="card-base p-6 h-full md:col-span-6 group relative overflow-hidden">
+            <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
               <div className="flex items-start justify-between mb-3 relative z-10">
                 <div className="flex items-center gap-2.5">
@@ -255,9 +254,31 @@ function WorkSection() {
             </div>
           </FadeInUp>
 
-          {/* Side-by-side: Full-Stack + AI Tooling */}
+          <FadeInUp delay={0.15}>
+            <div className="card-base p-6 h-full group relative overflow-hidden">
+              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                    {roles[3].icon}
+                  </div>
+                  <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
+                </div>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                  {roles[3].company}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{roles[3].description}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {roles[3].tags.map((t) => (
+                  <Tag key={t}>{t}</Tag>
+                ))}
+              </div>
+            </div>
+          </FadeInUp>
+
           <FadeInUp delay={0.2}>
-            <div className="card-base p-6 h-full md:col-span-3 group relative overflow-hidden">
+            <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
               <div className="flex items-center gap-2.5 mb-3 relative z-10">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
@@ -278,7 +299,7 @@ function WorkSection() {
           </FadeInUp>
 
           <FadeInUp delay={0.25}>
-            <div className="card-base p-6 h-full md:col-span-3 group relative overflow-hidden">
+            <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
               <div className="flex items-center gap-2.5 mb-3 relative z-10">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
@@ -292,30 +313,6 @@ function WorkSection() {
               <p className="text-sm text-muted-foreground leading-relaxed">{roles[2].description}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {roles[2].tags.map((t) => (
-                  <Tag key={t}>{t}</Tag>
-                ))}
-              </div>
-            </div>
-          </FadeInUp>
-
-          {/* Full-width: Commercial Proof / Revenue */}
-          <FadeInUp delay={0.3}>
-            <div className="card-base p-6 h-full md:col-span-6 group relative overflow-hidden">
-              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
-              <div className="flex items-start justify-between mb-3 relative z-10">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                    {roles[3].icon}
-                  </div>
-                  <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
-                </div>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  {roles[3].company}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{roles[3].description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {roles[3].tags.map((t) => (
                   <Tag key={t}>{t}</Tag>
                 ))}
               </div>
