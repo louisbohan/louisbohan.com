@@ -230,8 +230,9 @@ function WorkSection() {
           </p>
         </FadeInUp>
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-6 gap-4">
           <FadeInUp delay={0.1}>
+            <div className="md:col-span-6">
             <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
               <div className="flex items-start justify-between mb-3 relative z-10">
@@ -252,9 +253,11 @@ function WorkSection() {
                 ))}
               </div>
             </div>
+            </div>
           </FadeInUp>
 
           <FadeInUp delay={0.15}>
+            <div className="md:col-span-3">
             <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
               <div className="flex items-start justify-between mb-3 relative z-10">
@@ -275,9 +278,11 @@ function WorkSection() {
                 ))}
               </div>
             </div>
+            </div>
           </FadeInUp>
 
           <FadeInUp delay={0.2}>
+            <div className="md:col-span-3">
             <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
               <div className="flex items-center gap-2.5 mb-3 relative z-10">
@@ -296,9 +301,11 @@ function WorkSection() {
                 ))}
               </div>
             </div>
+            </div>
           </FadeInUp>
 
           <FadeInUp delay={0.25}>
+            <div className="md:col-span-6">
             <div className="card-base p-6 h-full group relative overflow-hidden">
               <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
               <div className="flex items-center gap-2.5 mb-3 relative z-10">
@@ -316,6 +323,7 @@ function WorkSection() {
                   <Tag key={t}>{t}</Tag>
                 ))}
               </div>
+            </div>
             </div>
           </FadeInUp>
         </div>
