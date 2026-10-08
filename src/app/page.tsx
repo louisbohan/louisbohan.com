@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ArrowUpRight,
   Mail,
@@ -10,7 +10,6 @@ import {
   Bot,
   TrendingUp,
 } from "lucide-react";
-import { motion, useInView } from "motion/react";
 import AsciiFlashlight from "@/components/AsciiFlashlight";
 
 // ── Icons ──
@@ -53,16 +52,35 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function FadeInUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect(); // once visible, stay visible forever
+        }
+      },
+      { rootMargin: "-160px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay, ease: [0.2, 0.65, 0.3, 0.9] }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(24px)",
+        transition: `opacity 3s ease ${delay}s, transform 3s ease ${delay}s`,
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -124,13 +142,13 @@ function Hero() {
 
         <FadeInUp delay={0.15}>
           <p className="mt-5 text-sm md:text-base text-amber-500/80 max-w-xl mx-auto leading-relaxed">
-            Acting Head – Partnership Development @ Odoo | ERP & SaaS Channel Strategy | Partner-Led Growth | MBA | Enablement & Alliances
+            Enterprise SaaS Sales & AI-Powered Products | Full-Cycle Closer | ERP/SaaS Go-to-Market | MBA
           </p>
         </FadeInUp>
 
         <FadeInUp delay={0.2}>
           <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            ERP partnerships, full-stack apps, and AI-powered tools — from concept to deployment to revenue. Currently leading channel growth at Odoo.
+            At Odoo I've run full-cycle deals end to end — discovery, multi-stakeholder selling, negotiation, close — and then designed the go-to-market motion that scaled revenue 180% YoY. I come from a sales-engineering background and ship production LLM agent systems myself, so I can scope a proof-of-concept with the engineers evaluating a platform and build the ROI case for the executives who approve the spend. As AI reshapes how software gets built and bought, that intersection — technical fluency plus enterprise selling — is where I want to be.
           </p>
         </FadeInUp>
 
@@ -226,106 +244,35 @@ function WorkSection() {
         <FadeInUp>
           <SectionHeading>What I Do</SectionHeading>
           <p className="mt-3 text-muted-foreground max-w-2xl text-sm leading-relaxed">
-            I specialize in building and scaling partner ecosystems for ERP and SaaS companies, with a focus on channel recruitment, enablement, and go-to-market execution. At Odoo, I&apos;ve helped scale our North American partner program by 5x over four years, leading a team that has closed 500+ new implementation and channel partner accounts.
+            I close and scale enterprise ERP and SaaS revenue — running full-cycle deals and building the go-to-market motion behind them. At Odoo I&apos;ve grown our North American program 5x in four years, leading a team that closed 500+ new implementation and partner accounts.
           </p>
         </FadeInUp>
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-6 gap-4">
-          <FadeInUp delay={0.1}>
-            <div className="md:col-span-6">
-            <div className="card-base p-6 h-full group relative overflow-hidden">
-              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
-              <div className="flex items-start justify-between mb-3 relative z-10">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                    {roles[0].icon}
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {roles.map((role, i) => (
+            <FadeInUp key={role.title} delay={i * 0.1}>
+              <div className="card-base p-6 h-full group relative overflow-hidden">
+                <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
+                <div className="flex items-start justify-between mb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                      {role.icon}
+                    </div>
+                    <h3 className="font-semibold text-foreground/90">{role.title}</h3>
                   </div>
-                  <h3 className="font-semibold text-foreground/90">{roles[0].title}</h3>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
+                    {role.company}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  {roles[0].company}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{roles[0].description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {roles[0].tags.map((t) => (
-                  <Tag key={t}>{t}</Tag>
-                ))}
-              </div>
-            </div>
-            </div>
-          </FadeInUp>
-
-          <FadeInUp delay={0.15}>
-            <div className="md:col-span-3">
-            <div className="card-base p-6 h-full group relative overflow-hidden">
-              <div aria-hidden className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-amber-500/[0.03] blur-2xl group-hover:bg-amber-500/[0.06] transition-all" />
-              <div className="flex items-start justify-between mb-3 relative z-10">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                    {roles[3].icon}
-                  </div>
-                  <h3 className="font-semibold text-foreground/90">{roles[3].title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{role.description}</p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {role.tags.map((t) => (
+                    <Tag key={t}>{t}</Tag>
+                  ))}
                 </div>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  {roles[3].company}
-                </span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{roles[3].description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {roles[3].tags.map((t) => (
-                  <Tag key={t}>{t}</Tag>
-                ))}
-              </div>
-            </div>
-            </div>
-          </FadeInUp>
-
-          <FadeInUp delay={0.2}>
-            <div className="md:col-span-3">
-            <div className="card-base p-6 h-full group relative overflow-hidden">
-              <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
-              <div className="flex items-center gap-2.5 mb-3 relative z-10">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                  {roles[1].icon}
-                </div>
-                <h3 className="font-semibold text-foreground/90">{roles[1].title}</h3>
-              </div>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full mb-3 inline-block">
-                {roles[1].company}
-              </span>
-              <p className="text-sm text-muted-foreground leading-relaxed">{roles[1].description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {roles[1].tags.map((t) => (
-                  <Tag key={t}>{t}</Tag>
-                ))}
-              </div>
-            </div>
-            </div>
-          </FadeInUp>
-
-          <FadeInUp delay={0.25}>
-            <div className="md:col-span-6">
-            <div className="card-base p-6 h-full group relative overflow-hidden">
-              <div aria-hidden className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/[0.02] blur-2xl group-hover:bg-amber-500/[0.05] transition-all" />
-              <div className="flex items-center gap-2.5 mb-3 relative z-10">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                  {roles[2].icon}
-                </div>
-                <h3 className="font-semibold text-foreground/90">{roles[2].title}</h3>
-              </div>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full mb-3 inline-block">
-                {roles[2].company}
-              </span>
-              <p className="text-sm text-muted-foreground leading-relaxed">{roles[2].description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {roles[2].tags.map((t) => (
-                  <Tag key={t}>{t}</Tag>
-                ))}
-              </div>
-            </div>
-            </div>
-          </FadeInUp>
+            </FadeInUp>
+          ))}
         </div>
       </div>
     </section>
@@ -338,7 +285,7 @@ const projects = [
   {
     title: "Brand Availability Agent",
     description:
-      "Scans 50+ platforms to check brand name availability. DNS verification, AI strategist analysis, automated scoring.",
+      "One-shot brand name check across 50+ domains, socials, and dev platforms — 0–100 strength score, AI-drafted taglines and positioning, exportable report.",
     tags: ["Next.js", "TypeScript", "Prisma", "Claude API", "TailwindCSS"],
     link: "https://brand-availability-demo.vercel.app",
   },

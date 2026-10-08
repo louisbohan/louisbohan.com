@@ -9,7 +9,7 @@ Currently leading channel growth at Odoo. Scaled North American partner program 
 - Email: lou@louisbohan.com
 
 ## Projects
-- **Brand Availability Agent** — Scans 50+ platforms for brand name availability. DNS verification, AI strategist analysis. https://github.com/louisbohan/brand-availability-agent
+- **Brand Availability Agent** — One-shot brand name check across 50+ domains, socials, and dev platforms — 0–100 strength score, AI-drafted taglines and positioning, exportable report. https://github.com/louisbohan/brand-availability-agent
 - **Prompt Router** — Intent-aware LLM routing proxy. Auto-selects Claude, DeepSeek, or GPT per request. https://github.com/louisbohan/prompt-router
 - **Kitchen Remodel Estimator** — Interactive cost estimator for Bay Area contractors. https://github.com/louisbohan/kitchen-remodel-estimator
 
