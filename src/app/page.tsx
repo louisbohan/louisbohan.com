@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import Link from "next/link";
 import {
   ArrowUpRight,
   Mail,
@@ -118,6 +119,9 @@ function Nav() {
           <button onClick={() => scrollTo("contact")} className="hover:text-foreground transition-colors">
             Contact
           </button>
+          <Link href="/resume" className="text-amber-500/90 hover:text-amber-400 transition-colors">
+            Resume
+          </Link>
         </div>
       </div>
     </nav>

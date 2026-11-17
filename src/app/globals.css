@@ -190,3 +190,36 @@
 .fade-in-up {
   animation: fade-in-up 0.6s ease-out both;
 }
+
+/* ── Resume page: print to paper ── */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .dark,
+  :root {
+    --background: #ffffff;
+    --foreground: #1a1a1a;
+    --muted-foreground: #555555;
+    --muted: #f4f4f4;
+    --border: rgba(0, 0, 0, 0.14);
+  }
+  body {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  section {
+    break-inside: avoid;
+  }
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
+
